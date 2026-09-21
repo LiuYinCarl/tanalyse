@@ -3,8 +3,6 @@ import {
   addDays,
   dayKeyOf,
   dayRange,
-  formatDayLabel,
-  formatMinutes,
   isDayKey,
   lastNDays,
   minutesToLabel,
@@ -75,19 +73,6 @@ describe("startOfWeek / monthRange", () => {
 });
 
 describe("展示格式", () => {
-  it("formatDayLabel 带星期", () => {
-    expect(formatDayLabel("2026-09-21")).toBe("2026-09-21 周一");
-    expect(formatDayLabel("2026-09-27")).toBe("2026-09-27 周日");
-  });
-
-  it("formatMinutes", () => {
-    expect(formatMinutes(0)).toBe("0 分钟");
-    expect(formatMinutes(45)).toBe("45 分钟");
-    expect(formatMinutes(60)).toBe("1 小时");
-    expect(formatMinutes(125)).toBe("2 小时 5 分");
-    expect(formatMinutes(NaN)).toBe("0 分钟");
-  });
-
   it("minutesToLabel / slotLabel", () => {
     expect(minutesToLabel(0)).toBe("00:00");
     expect(minutesToLabel(510)).toBe("08:30");

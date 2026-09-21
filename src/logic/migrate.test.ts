@@ -1,17 +1,19 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { loadData, serializeData } from "./migrate.ts";
 import {
   APP_VERSION,
   DATA_VERSION,
-  DEFAULT_CATEGORIES,
   POSITIONS_PER_DAY,
+  defaultCategories,
 } from "./schema.ts";
+import { setLocale } from "./i18n.ts";
 
 describe("loadData", () => {
+  beforeAll(() => setLocale("zh"));
   it("空输入生成默认数据", () => {
     const r = loadData(null);
     expect(r.data.version).toBe(DATA_VERSION);
-    expect(r.data.categories).toEqual(DEFAULT_CATEGORIES);
+    expect(r.data.categories).toEqual(defaultCategories());
     expect(r.migratedFrom).toBeNull();
     expect(r.repairs).toEqual([]);
     expect(r.readonly).toBe(false);

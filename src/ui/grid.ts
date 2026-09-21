@@ -6,7 +6,8 @@ import { AppStore } from "../state.ts";
 import { SLOTS_PER_DAY } from "../logic/schema.ts";
 import { getDay, setSlot, toggleSlot, slotTooltip } from "../logic/model.ts";
 import type { Day } from "../logic/model.ts";
-import { addDays, formatDayLabel, todayKey } from "../logic/time.ts";
+import { addDays, todayKey } from "../logic/time.ts";
+import { formatDayLabel, t } from "../logic/i18n.ts";
 import { EV } from "./events.ts";
 
 export interface GridView {
@@ -25,12 +26,16 @@ export function createGridView(store: AppStore): GridView {
 
   // ---- 日期导航 ----
   const dateLabel = h("div", { class: "date-label" });
-  const prevBtn = h("button", { class: "icon-btn", title: "前一天", onclick: () => shiftDay(-1) }, "‹");
-  const nextBtn = h("button", { class: "icon-btn", title: "后一天", onclick: () => shiftDay(1) }, "›");
+  const prevBtn = h("button", { class: "icon-btn", title: t("grid.prevDay"), onclick: () => shiftDay(-1) }, "‹");
+  const nextBtn = h("button", { class: "icon-btn", title: t("grid.nextDay"), onclick: () => shiftDay(1) }, "›");
   const todayBtn = h(
     "button",
-    { class: "btn btn-ghost", onclick: () => { store.setViewDay(todayKey()); } },
-    "今天",
+    {
+      class: "btn btn-ghost",
+      title: t("grid.today"),
+      onclick: () => { store.setViewDay(todayKey()); },
+    },
+    t("grid.today"),
   );
   const dateNav = h("div", { class: "date-nav glass" }, prevBtn, dateLabel, nextBtn, todayBtn);
 
@@ -46,7 +51,7 @@ export function createGridView(store: AppStore): GridView {
       "div",
       { class: "row-between" },
       dateNav,
-      h("div", { class: "hint" }, "单击填入所选分类 · 双击切分 10 分钟 · 右键清除"),
+      h("div", { class: "hint" }, t("grid.hint")),
     ),
     heatmapBox,
     gridEl,
@@ -80,10 +85,10 @@ export function createGridView(store: AppStore): GridView {
         "button",
         {
           class: "cat-chip cat-add",
-          title: "管理分类",
+          title: t("grid.manageCategories"),
           onclick: () => window.dispatchEvent(new CustomEvent(EV.gotoSettingsCategories)),
         },
-        "+ 分类",
+        t("grid.addCategory"),
       ),
     );
   }

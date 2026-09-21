@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppStore } from "./state.ts";
 import { loadData } from "./logic/migrate.ts";
 import { POSITIONS_PER_DAY } from "./logic/schema.ts";
@@ -26,6 +26,9 @@ beforeEach(() => {
 afterEach(() => {
   vi.useRealTimers();
 });
+
+import { setLocale } from "./logic/i18n.ts";
+beforeAll(() => setLocale("zh"));
 
 describe("AppStore 初始化", () => {
   it("初始默认状态", async () => {

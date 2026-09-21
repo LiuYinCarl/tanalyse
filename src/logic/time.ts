@@ -79,27 +79,6 @@ export function monthRange(year: number, month1to12: number): [string, string] |
   return [first.toISOString().slice(0, 10), last.toISOString().slice(0, 10)];
 }
 
-const WEEKDAYS_ZH = ["一", "二", "三", "四", "五", "六", "日"];
-
-/** “2026-09-21 周一” 形式的展示文本。 */
-export function formatDayLabel(key: string): string {
-  if (!isDayKey(key)) return key;
-  const d = dayKeyToDate(key)!;
-  const dow = d.getUTCDay(); // 0=周日
-  const zh = dow === 0 ? WEEKDAYS_ZH[6] : WEEKDAYS_ZH[dow - 1];
-  return `${key} 周${zh}`;
-}
-
-/** 分钟数 → “x小时y分” / “y分钟”。 */
-export function formatMinutes(min: number): string {
-  if (!Number.isFinite(min) || min <= 0) return "0 分钟";
-  const h = Math.floor(min / 60);
-  const m = Math.round(min % 60);
-  if (h === 0) return `${m} 分钟`;
-  if (m === 0) return `${h} 小时`;
-  return `${h} 小时 ${m} 分`;
-}
-
 /** 格子下标(0..143)→ 当天分钟偏移。10 分钟一格。 */
 export function posToMinutes(pos: number): number {
   return pos * 10;

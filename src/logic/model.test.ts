@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import {
   clearDay,
   dayMinutes,
@@ -19,6 +19,9 @@ import { createDefaultData, emptyDay } from "./schema.ts";
 function withWork(data = createDefaultData()) {
   return { data, work: "work", rest: "rest" };
 }
+
+import { setLocale } from "./i18n.ts";
+beforeAll(() => setLocale("zh"));
 
 describe("setSlot / setSubSlot / getDay", () => {
   it("设置整个 30 分钟格子", () => {

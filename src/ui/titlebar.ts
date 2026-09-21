@@ -2,6 +2,8 @@
 
 import { h } from "./dom.ts";
 import { isTauri } from "../bridge.ts";
+import { t } from "../logic/i18n.ts";
+import type { MsgKey } from "../logic/i18n.ts";
 
 export interface Titlebar {
   root: HTMLElement;
@@ -27,13 +29,14 @@ export function createTitlebar(appName: string): Titlebar {
     const light = (
       kind: "close" | "min" | "max",
       glyph: string,
+      titleKey: MsgKey,
       action: () => Promise<void>,
     ): HTMLElement =>
       h(
         "button",
         {
           class: `tl tl-${kind}`,
-          title: kind === "close" ? "关闭" : kind === "min" ? "最小化" : "最大化/还原",
+          title: t(titleKey),
           onclick: () => void action(),
         },
         h("span", { class: "tl-glyph" }, glyph),
@@ -42,9 +45,9 @@ export function createTitlebar(appName: string): Titlebar {
       const { getCurrentWindow } = await import("@tauri-apps/api/window");
       const win = getCurrentWindow();
       cluster.append(
-        light("close", "✕", () => win.close()),
-        light("min", "–", () => win.minimize()),
-        light("max", "⤢", () => win.toggleMaximize()),
+        light("close", "✕", "titlebar.close", () => win.close()),
+        light("min", "–", "titlebar.minimize", () => win.minimize()),
+        light("max", "⤢", "titlebar.maximize", () => win.toggleMaximize()),
       );
     })();
   }

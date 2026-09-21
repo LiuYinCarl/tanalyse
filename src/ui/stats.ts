@@ -4,15 +4,17 @@ import { h, svg, clear } from "./dom.ts";
 import { AppStore } from "../state.ts";
 import { rangeStats } from "../logic/model.ts";
 import { computeLineSeries, computePieSlices } from "../logic/stats.ts";
-import { dayRange, formatMinutes, lastNDays, todayKey } from "../logic/time.ts";
+import { dayRange, lastNDays, todayKey } from "../logic/time.ts";
+import { formatMinutes, t } from "../logic/i18n.ts";
+import type { MsgKey } from "../logic/i18n.ts";
 
 type RangeKey = "7d" | "30d" | "90d" | "all";
 
-const RANGE_DEFS: { key: RangeKey; label: string; days: number | null }[] = [
-  { key: "7d", label: "近 7 天", days: 7 },
-  { key: "30d", label: "近 30 天", days: 30 },
-  { key: "90d", label: "近 90 天", days: 90 },
-  { key: "all", label: "全部", days: null },
+const RANGE_DEFS: { key: RangeKey; labelKey: MsgKey; days: number | null }[] = [
+  { key: "7d", labelKey: "stats.range7d", days: 7 },
+  { key: "30d", labelKey: "stats.range30d", days: 30 },
+  { key: "90d", labelKey: "stats.range90d", days: 90 },
+  { key: "all", labelKey: "stats.rangeAll", days: null },
 ];
 
 export interface StatsView {
@@ -44,7 +46,7 @@ export function createStatsView(store: AppStore): StatsView {
               render();
             },
           },
-          def.label,
+          t(def.labelKey),
         ),
       );
     }
@@ -67,16 +69,16 @@ export function createStatsView(store: AppStore): StatsView {
   }
 
   function nameOf(id: string): string {
-    return store.data.categories.find((c) => c.id === id)?.name ?? "未知";
+    return store.data.categories.find((c) => c.id === id)?.name ?? t("stats.unknown");
   }
 
   function renderSummary(total: number, activeDays: number, days: number): void {
     clear(summary);
     const items = [
-      { label: "累计记录", value: formatMinutes(total) },
-      { label: "有记录天数", value: `${activeDays} / ${days} 天` },
+      { label: t("stats.total"), value: formatMinutes(total) },
+      { label: t("stats.activeDays"), value: `${activeDays} / ${days}` },
       {
-        label: "日均",
+        label: t("stats.daily"),
         value: formatMinutes(activeDays > 0 ? Math.round(total / activeDays) : 0),
       },
     ];
@@ -94,14 +96,14 @@ export function createStatsView(store: AppStore): StatsView {
 
   function renderPie(stats: ReturnType<typeof rangeStats>): void {
     clear(pieCard);
-    pieCard.append(h("div", { class: "card-title" }, "分类占比"));
+    pieCard.append(h("div", { class: "card-title" }, t("stats.pieTitle")));
     const size = 210;
     const cx = size / 2;
     const r = size / 2 - 8;
     const r0 = r * 0.58;
     const slices = computePieSlices(stats.byCategory, cx, cx, r, r0);
     if (slices.length === 0) {
-      pieCard.append(h("div", { class: "empty" }, "该时间段还没有记录"));
+      pieCard.append(h("div", { class: "empty" }, t("stats.empty")));
       return;
     }
     const chart = svg("svg", {
@@ -141,9 +143,9 @@ export function createStatsView(store: AppStore): StatsView {
 
   function renderLine(stats: ReturnType<typeof rangeStats>): void {
     clear(lineCard);
-    lineCard.append(h("div", { class: "card-title" }, "随时间变化"));
+    lineCard.append(h("div", { class: "card-title" }, t("stats.lineTitle")));
     if (stats.perDay.length === 0) {
-      lineCard.append(h("div", { class: "empty" }, "该时间段还没有记录"));
+      lineCard.append(h("div", { class: "empty" }, t("stats.empty")));
       return;
     }
     const catIds = store.data.categories.map((c) => c.id);

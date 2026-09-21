@@ -12,13 +12,15 @@ import { invoke } from "./bridge.ts";
 import { hexMix } from "./logic/color.ts";
 import { APP_VERSION } from "./logic/schema.ts";
 import { EV } from "./ui/events.ts";
+import { setLocale, t } from "./logic/i18n.ts";
+import type { MsgKey } from "./logic/i18n.ts";
 
 type TabKey = "grid" | "stats" | "settings";
 
-const TABS: { key: TabKey; label: string }[] = [
-  { key: "grid", label: "格子" },
-  { key: "stats", label: "统计" },
-  { key: "settings", label: "设置" },
+const TABS: { key: TabKey; labelKey: MsgKey }[] = [
+  { key: "grid", labelKey: "tab.grid" },
+  { key: "stats", labelKey: "tab.stats" },
+  { key: "settings", labelKey: "tab.settings" },
 ];
 
 function resolveTheme(mode: "system" | "light" | "dark"): "light" | "dark" {
@@ -68,15 +70,15 @@ async function main(): Promise<void> {
 
   function renderTabs(): void {
     clear(tabBar);
-    for (const t of TABS) {
+    for (const tab of TABS) {
       tabBar.append(
         h(
           "button",
           {
-            class: `tab-btn ${activeTab === t.key ? "tab-active" : ""}`,
-            onclick: () => switchTab(t.key),
+            class: `tab-btn ${activeTab === tab.key ? "tab-active" : ""}`,
+            onclick: () => switchTab(tab.key),
           },
-          t.label,
+          t(tab.labelKey),
         ),
       );
     }
@@ -105,7 +107,10 @@ async function main(): Promise<void> {
   });
 
   store.on("data", () => {
+    // 语言偏好随数据更新:先同步 i18n,再重渲染 Tab 与当前视图
+    setLocale(store.data.settings.locale);
     applyTheme(store);
+    renderTabs();
     renderActive();
   });
   store.on("view", () => {
@@ -118,11 +123,10 @@ async function main(): Promise<void> {
   await store.init();
   applyTheme(store);
   let message = store.loadResult.repairs.length
-    ? `数据已自动修复:${store.loadResult.repairs.join(";")}`
+    ? t("notice.repaired", { msg: store.loadResult.repairs.join("; ") })
     : "";
   if (store.readonlyMode) {
-    message =
-      "此数据文件由更新版本的 tanalyse 创建,当前版本以只读模式运行,修改不会被保存。";
+    message = t("notice.readonly");
   }
   notice.textContent = message;
   notice.hidden = message === "";

@@ -4,6 +4,7 @@
  */
 
 import fc from "fast-check";
+import { beforeAll } from "vitest";
 import { describe, expect, it } from "vitest";
 import {
   clearDay,
@@ -32,6 +33,9 @@ const slotArb = fc.integer({ min: 0, max: SLOTS_PER_DAY - 1 });
 const subArb = fc.integer({ min: 0, max: 2 });
 const catArb = fc.constantFrom("work", "rest");
 const catOrNullArb = fc.option(catArb, { nil: null });
+
+import { setLocale } from "./i18n.ts";
+beforeAll(() => setLocale("zh"));
 
 describe("模糊测试:格子模型不变量", () => {
   it("任意设置序列后,每天数组长度恰为 144", () => {

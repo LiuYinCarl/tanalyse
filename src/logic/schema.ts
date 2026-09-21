@@ -4,6 +4,8 @@
  * 一天的数据是长度 144 的数组:每 10 分钟一个位置,30 分钟格子 = 3 个连续位置。
  */
 
+import { detectLocale, t } from "./i18n.ts";
+import type { Locale } from "./i18n.ts";
 import { compareSemver } from "./version.ts";
 
 /** 数据文件的 schema 版本(语义版本号)。 */
@@ -30,6 +32,8 @@ export interface AppSettings {
   accentColor: string;
   weekStartsOn: 0 | 1;
   autoStart: boolean;
+  /** 界面语言;随数据持久化,缺省时按系统语言探测。 */
+  locale: Locale;
 }
 
 export interface AppData {
@@ -69,16 +73,23 @@ export const ACCENT_CHOICES: string[] = [
   ...MORANDI_PALETTE.slice(0, 6),
 ];
 
-export const DEFAULT_CATEGORIES: Category[] = [
-  { id: "work", name: "工作", color: MORANDI_PALETTE[0], builtin: "work" },
-  { id: "rest", name: "休息", color: MORANDI_PALETTE[1], builtin: "rest" },
-];
+/**
+ * 内置分类(工作/休息)。名称在创建数据时按当前语言生成,
+ * 之后作为用户数据处理——切换语言不会改写已有数据的名称。
+ */
+export function defaultCategories(): Category[] {
+  return [
+    { id: "work", name: t("cat.work"), color: MORANDI_PALETTE[0], builtin: "work" },
+    { id: "rest", name: t("cat.rest"), color: MORANDI_PALETTE[1], builtin: "rest" },
+  ];
+}
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: "system",
   accentColor: DEFAULT_ACCENT,
   weekStartsOn: 1,
   autoStart: false,
+  locale: detectLocale(),
 };
 
 export function emptyDay(): (string | null)[] {
@@ -90,7 +101,7 @@ export function createDefaultData(): AppData {
     version: DATA_VERSION,
     appVersion: APP_VERSION,
     createdAt: new Date().toISOString(),
-    categories: DEFAULT_CATEGORIES.map((c) => ({ ...c })),
+    categories: defaultCategories(),
     entries: {},
     settings: { ...DEFAULT_SETTINGS },
   };

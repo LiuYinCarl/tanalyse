@@ -8,6 +8,7 @@ import type { LoadResult } from "./logic/migrate.ts";
 import { findCategory } from "./logic/schema.ts";
 import type { AppData, Category } from "./logic/schema.ts";
 import { todayKey } from "./logic/time.ts";
+import { t } from "./logic/i18n.ts";
 
 export type Unsubscribe = () => void;
 
@@ -134,7 +135,7 @@ export class AppStore {
     this.loadResult = {
       data: next,
       migratedFrom: this.loadResult.migratedFrom,
-      repairs: ["已导入新数据"],
+      repairs: [t("state.imported")],
       readonly: false,
     };
     this.readonlyMode = false;

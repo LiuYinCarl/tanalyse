@@ -19,6 +19,8 @@ import {
   setAutoStart,
 } from "../bridge.ts";
 import { loadData } from "../logic/migrate.ts";
+import { t } from "../logic/i18n.ts";
+import type { Locale, MsgKey } from "../logic/i18n.ts";
 
 export interface SettingsView {
   root: HTMLElement;
@@ -37,19 +39,20 @@ export function createSettingsView(store: AppStore): SettingsView {
   }
 
   // ---- 外观 ----
-  const appearance = card("外观");
+  const appearance = card(t("settings.appearance"));
   const themeRow = h("div", { class: "setting-row" });
   const accentRow = h("div", { class: "setting-row" });
-  appearance.body.append(themeRow, accentRow);
+  const langRow = h("div", { class: "setting-row" });
+  appearance.body.append(themeRow, accentRow, langRow);
 
   function renderAppearance(): void {
     clear(themeRow);
-    themeRow.append(h("label", { class: "setting-label" }, "主题"));
+    themeRow.append(h("label", { class: "setting-label" }, t("settings.theme")));
     const seg = h("div", { class: "segmented" });
-    const modes: { key: AppSettings["theme"]; label: string }[] = [
-      { key: "system", label: "跟随系统" },
-      { key: "light", label: "浅色" },
-      { key: "dark", label: "深色" },
+    const modes: { key: AppSettings["theme"]; labelKey: MsgKey }[] = [
+      { key: "system", labelKey: "settings.themeSystem" },
+      { key: "light", labelKey: "settings.themeLight" },
+      { key: "dark", labelKey: "settings.themeDark" },
     ];
     for (const m of modes) {
       seg.append(
@@ -62,14 +65,14 @@ export function createSettingsView(store: AppStore): SettingsView {
               store.updateSettings({ theme: m.key });
             },
           },
-          m.label,
+          t(m.labelKey),
         ),
       );
     }
     themeRow.append(seg);
 
     clear(accentRow);
-    accentRow.append(h("label", { class: "setting-label" }, "主题色"));
+    accentRow.append(h("label", { class: "setting-label" }, t("settings.accent")));
     const swatches = h("div", { class: "swatch-row" });
     for (const color of ACCENT_CHOICES) {
       swatches.append(
@@ -85,13 +88,33 @@ export function createSettingsView(store: AppStore): SettingsView {
       );
     }
     accentRow.append(swatches);
+
+    clear(langRow);
+    langRow.append(h("label", { class: "setting-label" }, t("settings.language")));
+    const langSeg = h("div", { class: "segmented" });
+    for (const loc of ["zh", "en"] as Locale[]) {
+      langSeg.append(
+        h(
+          "button",
+          {
+            class: `seg-btn ${store.data.settings.locale === loc ? "seg-active" : ""}`,
+            onclick: () => {
+              // 触发 data 事件:main 同步 i18n 并全量重渲染
+              store.updateSettings({ locale: loc });
+            },
+          },
+          loc === "zh" ? "中文" : "English",
+        ),
+      );
+    }
+    langRow.append(langSeg);
   }
 
   // ---- 分类管理 ----
-  const categoriesCard = card("分类管理");
+  const categoriesCard = card(t("settings.categories"));
   const catList = h("div", { class: "category-list" });
   categoriesCard.body.append(
-    h("p", { class: "card-desc" }, "工作与休息为内置分类,可改名换色;自定义分类可删除。颜色取自莫兰迪色板。"),
+    h("p", { class: "card-desc" }, t("settings.categoriesDesc")),
     catList,
   );
 
@@ -127,7 +150,7 @@ export function createSettingsView(store: AppStore): SettingsView {
       const colorBtn = h("button", {
         class: "swatch",
         style: `background: ${cat.color}`,
-        title: "更换颜色",
+        title: t("settings.accent"),
         onclick: () => row.classList.toggle("cat-row-open"),
       });
       const picker = palettePicker(cat.color, (c) => {
@@ -140,12 +163,12 @@ export function createSettingsView(store: AppStore): SettingsView {
             "button",
             {
               class: "btn btn-ghost btn-danger",
-              title: "删除分类",
+              title: t("settings.delete"),
               onclick: () => {
                 store.removeCategory(cat.id);
               },
             },
-            "删除",
+            t("settings.delete"),
           ),
         );
       }
@@ -159,7 +182,7 @@ export function createSettingsView(store: AppStore): SettingsView {
     const addSwatch = h("button", {
       class: "swatch",
       style: `background: ${newColor}`,
-      title: "更换颜色",
+      title: t("settings.accent"),
       onclick: () => addRow.classList.toggle("cat-row-open"),
     });
     addRow.append(
@@ -168,7 +191,7 @@ export function createSettingsView(store: AppStore): SettingsView {
         class: "input cat-name",
         type: "text",
         maxlength: "24",
-        placeholder: "新分类名称…",
+        placeholder: t("settings.newCategoryPlaceholder"),
         oninput: (e: Event) => {
           newName = (e.target as HTMLInputElement).value.trim();
         },
@@ -176,7 +199,7 @@ export function createSettingsView(store: AppStore): SettingsView {
           if ((e as KeyboardEvent).key === "Enter") addNew();
         },
       }),
-      h("button", { class: "btn btn-ghost", onclick: () => addNew() }, "新增"),
+      h("button", { class: "btn btn-ghost", onclick: () => addNew() }, t("settings.add")),
       palettePicker(newColor, (c) => {
         newColor = c;
         addSwatch.style.background = c;
@@ -191,14 +214,14 @@ export function createSettingsView(store: AppStore): SettingsView {
   }
 
   // ---- 通用 ----
-  const general = card("通用");
+  const general = card(t("settings.general"));
   const autoRow = h("div", { class: "setting-row" });
   const weekRow = h("div", { class: "setting-row" });
   general.body.append(autoRow, weekRow);
 
   function renderGeneral(): void {
     clear(autoRow);
-    autoRow.append(h("label", { class: "setting-label" }, "开机自启"));
+    autoRow.append(h("label", { class: "setting-label" }, t("settings.autoStart")));
     const toggle = h("button", {
       class: `toggle ${store.data.settings.autoStart ? "toggle-on" : ""}`,
       role: "switch",
@@ -213,11 +236,11 @@ export function createSettingsView(store: AppStore): SettingsView {
     autoRow.append(toggle);
 
     clear(weekRow);
-    weekRow.append(h("label", { class: "setting-label" }, "一周起始"));
+    weekRow.append(h("label", { class: "setting-label" }, t("settings.weekStart")));
     const seg = h("div", { class: "segmented" });
     for (const opt of [
-      { v: 1 as const, label: "周一" },
-      { v: 0 as const, label: "周日" },
+      { v: 1 as const, label: t("settings.monday") },
+      { v: 0 as const, label: t("settings.sunday") },
     ]) {
       seg.append(
         h(
@@ -237,7 +260,7 @@ export function createSettingsView(store: AppStore): SettingsView {
   }
 
   // ---- 数据 ----
-  const dataCard = card("数据");
+  const dataCard = card(t("settings.data"));
   const dataBody = h("div", { class: "data-info" });
   dataCard.body.append(dataBody);
 
@@ -254,8 +277,8 @@ export function createSettingsView(store: AppStore): SettingsView {
       h(
         "div",
         { class: "setting-row" },
-        h("label", { class: "setting-label" }, "数据文件"),
-        h("span", { class: "path-text", title: dataPath }, dataPath || "加载中…"),
+        h("label", { class: "setting-label" }, t("settings.dataFile")),
+        h("span", { class: "path-text", title: dataPath }, dataPath || t("settings.loading")),
         h(
           "button",
           {
@@ -264,13 +287,13 @@ export function createSettingsView(store: AppStore): SettingsView {
               if (dataPath) await revealPath(dataPath);
             },
           },
-          "打开位置",
+          t("settings.openLocation"),
         ),
       ),
       h(
         "div",
         { class: "setting-row" },
-        h("label", { class: "setting-label" }, "导出 / 分享"),
+        h("label", { class: "setting-label" }, t("settings.share")),
         h(
           "button",
           {
@@ -282,7 +305,7 @@ export function createSettingsView(store: AppStore): SettingsView {
               await invoke("export_data_to", { path, json });
             },
           },
-          "导出 JSON…",
+          t("settings.exportJson"),
         ),
         h(
           "button",
@@ -301,13 +324,17 @@ export function createSettingsView(store: AppStore): SettingsView {
               if (isTauri) await setAutoStart(store.data.settings.autoStart);
             },
           },
-          "导入 JSON…",
+          t("settings.importJson"),
         ),
       ),
       h(
         "div",
         { class: "setting-row version-row" },
-        h("span", { class: "version" }, `应用 v${await appVersion()} · 数据格式 v${DATA_VERSION}`),
+        h(
+          "span",
+          { class: "version" },
+          t("settings.versionLine", { app: await appVersion(), schema: DATA_VERSION }),
+        ),
       ),
     );
   }

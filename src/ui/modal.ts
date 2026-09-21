@@ -5,6 +5,7 @@ import { AppStore } from "../state.ts";
 import { SUB_SLOTS } from "../logic/schema.ts";
 import { getSlotStates, setSubSlot, setSlot } from "../logic/model.ts";
 import { minutesToLabel } from "../logic/time.ts";
+import { t } from "../logic/i18n.ts";
 
 export interface ModalHandle {
   close: () => void;
@@ -31,7 +32,7 @@ export function openSlotModal(
     "div",
     { class: "modal-title" },
     h("span", {}, `${minutesToLabel(titleStart)} – ${minutesToLabel(titleEnd)}`),
-    h("span", { class: "modal-sub" }, "每个小格 10 分钟"),
+    h("span", { class: "modal-sub" }, t("modal.eachTen")),
   );
 
   const chips = h("div", { class: "chip-row" });
@@ -74,7 +75,7 @@ export function openSlotModal(
           {
             class: `segment ${catId ? "segment-filled" : ""}`,
             style: catId ? `--seg-color: ${cat?.color ?? "var(--accent)"}` : "",
-            title: cat ? cat.name : "未记录",
+            title: cat ? cat.name : t("modal.unrecorded"),
             onclick: () => {
               if (store.readonlyMode || !activeCategory) return;
               const next = catId === activeCategory ? null : activeCategory;
@@ -84,7 +85,7 @@ export function openSlotModal(
             },
           },
           h("div", { class: "segment-time" }, minutesToLabel(start)),
-          h("div", { class: "segment-state" }, cat ? cat.name : "空"),
+          h("div", { class: "segment-state" }, cat ? cat.name : t("modal.empty")),
         ),
       );
     }
@@ -101,9 +102,9 @@ export function openSlotModal(
         renderSegments();
       },
     },
-    "清空",
+    t("modal.clear"),
   );
-  const closeBtn = h("button", { class: "btn btn-primary", onclick: () => api.close() }, "完成");
+  const closeBtn = h("button", { class: "btn btn-primary", onclick: () => api.close() }, t("modal.done"));
 
   dialog.append(title, chips, segRow, h("div", { class: "modal-actions" }, clearAll, closeBtn));
   backdrop.append(dialog);

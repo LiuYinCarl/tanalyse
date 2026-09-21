@@ -12,6 +12,7 @@ import {
 } from "./schema.ts";
 import type { AppData } from "./schema.ts";
 import { dayRange, isDayKey } from "./time.ts";
+import { joinList, t } from "./i18n.ts";
 
 export type Day = (string | null)[];
 
@@ -236,5 +237,5 @@ export function slotTooltip(
   const unique = [...new Set(names)];
   const hh = (m: number): string =>
     `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
-  return `${dayKey} ${hh(start)}–${hh(start + span)} · ${unique.length ? unique.join("、") : "未记录"}`;
+  return `${dayKey} ${hh(start)}–${hh(start + span)} · ${unique.length ? joinList(unique) : t("modal.unrecorded")}`;
 }

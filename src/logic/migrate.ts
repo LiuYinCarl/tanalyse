@@ -19,6 +19,7 @@ import {
 import type { AppData, AppSettings, Category } from "./schema.ts";
 import { isDayKey } from "./time.ts";
 import { compareSemver, parseSemver } from "./version.ts";
+import { t as msg } from "./i18n.ts";
 
 export interface LoadResult {
   data: AppData;
@@ -60,10 +61,10 @@ export function sanitizeData(raw: unknown): { data: AppData; repairs: string[] }
     if (cats.length > 0) {
       data.categories = cats;
     } else {
-      repairs.push("categories:空或全部非法,已重置为默认分类");
+      repairs.push(msg("repair.categoriesReset"));
     }
   } else if (obj.categories !== undefined) {
-    repairs.push("categories:不是数组,已重置");
+    repairs.push(msg("repair.categoriesNotArray"));
   }
 
   // entries
@@ -88,10 +89,10 @@ export function sanitizeData(raw: unknown): { data: AppData; repairs: string[] }
       entries[key] = day;
     }
     data.entries = entries;
-    if (droppedDays > 0) repairs.push(`entries:丢弃 ${droppedDays} 个非法日期`);
-    if (unknownCats > 0) repairs.push(`entries:清除 ${unknownCats} 个未知分类的标记`);
+    if (droppedDays > 0) repairs.push(msg("repair.entriesDropped", { n: droppedDays }));
+    if (unknownCats > 0) repairs.push(msg("repair.entriesUnknown", { n: unknownCats }));
   } else if (obj.entries !== undefined) {
-    repairs.push("entries:不是对象,已重置");
+    repairs.push(msg("repair.entriesReset"));
   }
 
   // settings
@@ -116,14 +117,16 @@ function sanitizeCategory(raw: unknown, taken: Set<string>): Category | null {
 function sanitizeSettings(raw: unknown, repairs: string[]): AppSettings {
   const s: AppSettings = { ...DEFAULT_SETTINGS };
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
-    if (raw !== undefined) repairs.push("settings:不是对象,已重置");
+    if (raw !== undefined) repairs.push(msg("repair.settingsReset"));
     return s;
   }
   const o = raw as Record<string, unknown>;
   if (o.theme === "light" || o.theme === "dark" || o.theme === "system") s.theme = o.theme;
-  else if (o.theme !== undefined) repairs.push("settings.theme:非法,已重置");
+  else if (o.theme !== undefined) repairs.push(msg("repair.themeReset"));
   if (isValidHexColor(o.accentColor)) s.accentColor = o.accentColor.toLowerCase();
-  else if (o.accentColor !== undefined) repairs.push("settings.accentColor:非法,已重置");
+  else if (o.accentColor !== undefined) repairs.push(msg("repair.accentReset"));
+  if (o.locale === "zh" || o.locale === "en") s.locale = o.locale;
+  else if (o.locale !== undefined) repairs.push(msg("repair.localeReset"));
   if (o.weekStartsOn === 0 || o.weekStartsOn === 1) s.weekStartsOn = o.weekStartsOn;
   if (typeof o.autoStart === "boolean") s.autoStart = o.autoStart;
   return s;
@@ -145,7 +148,7 @@ export function loadData(json: string | null | undefined): LoadResult {
     return {
       data: createDefaultData(),
       migratedFrom: null,
-      repairs: ["JSON 解析失败,已创建新数据"],
+      repairs: [msg("repair.jsonParse")],
       readonly: false,
     };
   }
@@ -157,10 +160,10 @@ export function loadData(json: string | null | undefined): LoadResult {
   let migratedFrom: string | null = null;
 
   if (version === null) {
-    repairs.push("缺少 version,已按当前格式重建");
+    repairs.push(msg("repair.missingVersion"));
   } else if (parseSemver(version) === null) {
     // 非法版本号当作未知旧数据处理,清洗后写回当前版本
-    repairs.push(`version:"${version}" 非法,已按当前格式重建`);
+    repairs.push(msg("repair.invalidVersion", { v: version }));
     migratedFrom = version;
   }
 

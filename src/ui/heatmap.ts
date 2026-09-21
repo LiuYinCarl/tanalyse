@@ -5,6 +5,7 @@ import { AppStore } from "../state.ts";
 import { heatmapData } from "../logic/model.ts";
 import { addDays, startOfWeek, todayKey } from "../logic/time.ts";
 import { heatShades } from "../logic/color.ts";
+import { formatMinutes, monthLabel, t, weekdayShort } from "../logic/i18n.ts";
 import { EV } from "./events.ts";
 
 const WEEKS = 26;
@@ -13,8 +14,7 @@ const GAP = 3;
 const LABEL_W = 22;
 const TOP = 16;
 
-const WEEK_LABELS: Record<number, string> = { 0: "日", 1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六" };
-const MONTHS = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
 
 export interface HeatmapView {
   root: HTMLElement;
@@ -27,7 +27,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
   const head = h(
     "div",
     { class: "heatmap-head" },
-    h("span", { class: "heatmap-title" }, `近 ${WEEKS} 周`),
+    h("span", { class: "heatmap-title" }, t("heatmap.weeks", { n: WEEKS })),
     legend,
   );
   const box = h("div", { class: "heatmap-scroll" });
@@ -56,7 +56,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
       viewBox: `0 0 ${LABEL_W + gridW + 4} ${TOP + gridH + 4}`,
       class: "heatmap-svg",
       role: "img",
-      "aria-label": "近 26 周时间记录热力图",
+      "aria-label": t("heatmap.aria", { n: WEEKS }),
     });
 
     // 星期标签(一 / 三 / 五)
@@ -67,7 +67,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
         svg(
           "text",
           { x: 0, y: TOP + d * (CELL + GAP) + CELL - 2, class: "hm-text" },
-          WEEK_LABELS[dow],
+          weekdayShort(dow),
         ),
       );
     }
@@ -84,7 +84,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
           svg(
             "text",
             { x: LABEL_W + w * (CELL + GAP), y: 11, class: "hm-text" },
-            MONTHS[month],
+            monthLabel(month),
           ),
         );
       }
@@ -107,7 +107,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
           class: `hm-cell${future ? " hm-future" : ""}${c.day === today ? " hm-today" : ""}`,
           fill: future ? "transparent" : shades[c.level],
           "data-day": c.day,
-          title: `${c.day} · ${c.minutes > 0 ? `${c.minutes} 分钟` : "无记录"}`,
+          title: `${c.day} · ${c.minutes > 0 ? formatMinutes(c.minutes) : t("heatmap.noRecord")}`,
         }),
       );
     }
@@ -128,7 +128,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
   function renderLegend(): void {
     clear(legend);
     const shades = heatShades(store.data.settings.accentColor);
-    legend.append("少");
+    legend.append(t("heatmap.less"));
     shades.forEach((c, i) => {
       legend.append(
         h("span", {
@@ -137,7 +137,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
         }),
       );
     });
-    legend.append("多");
+    legend.append(t("heatmap.more"));
   }
 
   return { root, render };
