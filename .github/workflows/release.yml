@@ -14,11 +14,11 @@ jobs:
       matrix:
         include:
           - platform: macos-latest # Apple Silicon
-            args: --target aarch64-app-darwin
-            rust-target: aarch64-app-darwin
+            args: --target aarch64-apple-darwin
+            rust-target: aarch64-apple-darwin
           - platform: macos-latest # Intel
-            args: --target x86_64-app-darwin
-            rust-target: x86_64-app-darwin
+            args: --target x86_64-apple-darwin
+            rust-target: x86_64-apple-darwin
           - platform: ubuntu-22.04
             args: ""
             rust-target: ""

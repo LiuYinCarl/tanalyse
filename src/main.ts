@@ -57,9 +57,8 @@ async function main(): Promise<void> {
   const notice = h("div", { class: "notice", hidden: true });
   app.append(titlebar.root, tabBar, notice, panels.grid, panels.stats, panels.settings);
 
-  const gridView = createGridView(store);
   const heatmap = createHeatmap(store);
-  gridView.root.querySelector(".heatmap-box")!.append(heatmap.root);
+  const gridView = createGridView(store, heatmap.root);
   const statsView = createStatsView(store);
   const settingsView = createSettingsView(store);
   panels.grid.append(gridView.root);

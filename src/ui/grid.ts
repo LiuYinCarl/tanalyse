@@ -18,7 +18,7 @@ export interface GridView {
 /** 单击与双击并存:单击延迟触发,双击取消单击。 */
 const CLICK_DELAY_MS = 230;
 
-export function createGridView(store: AppStore): GridView {
+export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridView {
   const root = h("section", { class: "tab-panel grid-panel" });
 
   // ---- 分类选择栏(单选项) ----
@@ -39,8 +39,9 @@ export function createGridView(store: AppStore): GridView {
   );
   const dateNav = h("div", { class: "date-nav glass" }, prevBtn, dateLabel, nextBtn, todayBtn);
 
-  // ---- 热力图容器 ----
+  // ---- 热力图容器(热力图视图由 main 创建后注入) ----
   const heatmapBox = h("div", { class: "heatmap-box glass" });
+  heatmapBox.append(heatmapSlot);
 
   // ---- 日格子:两行(0-11 点 / 12-23 点),各自带小时标签 ----
   const gridEl = h("div", { class: "day-grid" });
@@ -134,6 +135,13 @@ export function createGridView(store: AppStore): GridView {
     );
     cell.addEventListener("mouseenter", () => {
       cell.title = slotTooltip(store.data, store.viewDay, slot);
+    });
+    cell.tabIndex = 0; // role=button 需要配套键盘操作
+    cell.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        cell.click();
+      }
     });
 
     let clickTimer: ReturnType<typeof setTimeout> | null = null;
