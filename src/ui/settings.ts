@@ -18,7 +18,7 @@ import {
   revealPath,
   setAutoStart,
 } from "../bridge.ts";
-import { loadData } from "../logic/migrate.ts";
+import { loadData, serializeData } from "../logic/migrate.ts";
 import { t } from "../logic/i18n.ts";
 import type { Locale, MsgKey } from "../logic/i18n.ts";
 
@@ -301,7 +301,8 @@ export function createSettingsView(store: AppStore): SettingsView {
             onclick: async () => {
               const path = await pickSavePath(`tanalyse-${new Date().toISOString().slice(0, 10)}.json`);
               if (!path) return;
-              const json = JSON.stringify(store.data, null, 2);
+              // 与自动保存同一序列化路径:版本盖章、裁剪空日期
+              const json = serializeData(store.data);
               await invoke("export_data_to", { path, json });
             },
           },
