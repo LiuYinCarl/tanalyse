@@ -1,0 +1,89 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest # Apple Silicon
+            args: --target aarch64-app-darwin
+            rust-target: aarch64-app-darwin
+          - platform: macos-latest # Intel
+            args: --target x86_64-app-darwin
+            rust-target: x86_64-app-darwin
+          - platform: ubuntu-22.04
+            args: ""
+            rust-target: ""
+          - platform: windows-latest
+            args: ""
+            rust-target: ""
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-target }}
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: 安装 Linux 依赖
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2
+
+      - name: 前端依赖
+        run: npm ci
+
+      - name: 构建(附加到 GitHub Release)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: "tanalyse ${{ github.ref_name }}"
+          releaseBody: "多平台安装包与便携版。数据为本地 JSON 文件,与程序同目录存放,可直接分享。"
+          releaseDraft: false
+          prerelease: false
+          args: ${{ matrix.args }}
+
+      - name: 便携版(Windows 单文件)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path portable | Out-Null
+          Copy-Item src-tauri/target/release/tanalyse.exe portable/tanalyse.exe
+          Compress-Archive -Path portable/tanalyse.exe -DestinationPath portable/tanalyse-portable-windows-x64.zip -Force
+
+      - name: 便携版(macOS 压缩包)
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        run: |
+          TARGET=$(echo "${{ matrix.args }}" | sed 's/.*--target //')
+          APP="src-tauri/target/${TARGET}/release/bundle/macos/tanalyse.app"
+          cd "$(dirname "$APP")"
+          zip -r -y "$GITHUB_WORKSPACE/tanalyse-portable-macos-${TARGET}.zip" "$(basename "$APP")"
+
+      - name: 上传便携版到 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            portable/*.zip
+            tanalyse-portable-macos-*.zip

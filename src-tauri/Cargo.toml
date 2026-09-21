@@ -1,0 +1,33 @@
+[package]
+name = "tanalyse"
+version = "1.0.0"
+description = "tanalyse · 极简时间块记录"
+authors = ["kenshin"]
+edition = "2021"
+rust-version = "1.77"
+
+[lib]
+name = "tanalyse_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-autostart = "2"
+tauri-plugin-dialog = "2"
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+tempfile = "3"
+tauri = { version = "2", features = ["test"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # tag 构建由 release.yml 负责;此工作流可手动触发
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: 前端测试与覆盖率(≥90%)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: 单元测试 + 模糊测试(属性测试)
+        run: npm test
+      - name: 覆盖率(门槛 90%)
+        run: npm run coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  rust:
+    name: Rust 测试与覆盖率(≥90%)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: 格式与静态检查
+        run: |
+          cd src-tauri
+          cargo fmt --check
+          cargo clippy -- -D warnings
+      - name: 单元测试
+        run: cd src-tauri && cargo test
+      - name: 覆盖率(门槛 90%,排除 main/lib 启动胶水)
+        run: |
+          cd src-tauri
+          cargo llvm-cov --lcov --output-path lcov.info --fail-under-lines 90 \
+            --ignore-filename-regex 'src/(main|lib)\.rs$'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rust-lcov
+          path: src-tauri/lcov.info
+          retention-days: 7
+
+  fuzz:
+    name: 模糊测试(cargo-fuzz,短时探索)
+    runs-on: ubuntu-latest
+    continue-on-error: true # 模糊测试为探索性任务,发现 crash 再修复
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-fuzz
+      - uses: Swatinem/rust-cache@v2
+      - name: 运行 60 秒模糊测试
+        run: cargo fuzz run parse_data --fuzz-dir fuzz -- -max_total_time=60

@@ -1,0 +1,20 @@
+# 前端
+node_modules/
+dist/
+coverage/
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/schemas/
+
+# 模糊测试产物
+fuzz/artifacts/
+fuzz/coverage/
+fuzz/target/
+src-tauri/fuzz/
+
+# 系统与编辑器
+.DS_Store
+*.log
+.idea/
+.vscode/
