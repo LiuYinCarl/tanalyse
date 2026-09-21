@@ -1,8 +1,8 @@
 /* tanalyse · 液态玻璃风格(Apple Liquid Glass 参考)
  *
  * 分层结构:
- *   1. 环境光层(html 背景):半透明径向渐变,给玻璃提供"可折射"的色彩;
- *      在 Tauri 中与原生 vibrancy 叠加,浏览器预览也有同类观感。
+ *   1. 窗口层(#app):随窗口圆角裁切,内部铺半透明环境光渐变,
+ *      给玻璃提供"可折射"的色彩;macOS 上与原生 vibrancy(同半径圆角)叠加。
  *   2. 玻璃面板(.glass):高斯模糊 + 饱和度提升 + 顶部内描边高光 + 柔和投影。
  *   3. 组件层:药丸 Tab、玻璃分段控件、发光的激活态。
  * 主题经 data-theme(light/dark)切换,--accent 为主题色(默认浅绿,同图标)。
@@ -12,6 +12,7 @@
   --accent: #8fcba8;
   --accent-deep: #4f8f6d;
   --heat-empty: #00000012;
+  --window-radius: 22px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
@@ -37,6 +38,7 @@
   --glass-strong: rgba(255, 255, 255, 0.74);
   --glass-border: rgba(255, 255, 255, 0.6);
   --glass-highlight: rgba(255, 255, 255, 0.85);
+  --window-ring: rgba(255, 255, 255, 0.75);
   --shadow: 0 12px 40px rgba(31, 58, 45, 0.16), 0 2px 8px rgba(31, 58, 45, 0.06);
   --hover: rgba(29, 60, 45, 0.07);
   --cell: rgba(29, 60, 45, 0.06);
@@ -45,22 +47,22 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --text: #eaf1ed;
-  --text-dim: #a4b5ad;
-  /* 环境光:深灰绿基调上的绿/蓝/暖光斑,避免死黑 */
-  --ambient-1: rgba(110, 198, 153, 0.26);
-  --ambient-2: rgba(96, 128, 176, 0.22);
-  --ambient-3: rgba(199, 164, 160, 0.14);
-  --ambient-base: rgba(16, 24, 26, 0.72);
-  /* 玻璃:深灰绿半透明,保留透光感 */
-  --glass: linear-gradient(165deg, rgba(62, 78, 82, 0.5), rgba(30, 42, 45, 0.46));
-  --glass-strong: rgba(28, 40, 43, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.14);
-  --glass-highlight: rgba(255, 255, 255, 0.16);
-  --shadow: 0 14px 44px rgba(0, 0, 0, 0.42), 0 2px 8px rgba(0, 0, 0, 0.24);
-  --hover: rgba(234, 241, 237, 0.09);
-  --cell: rgba(234, 241, 237, 0.08);
-  --cell-edge: rgba(234, 241, 237, 0.14);
+  /* 暮色玻璃:整体提亮为灰绿奶白,避免深黑 */
+  --text: #f4f9f6;
+  --text-dim: #c2d2ca;
+  --ambient-1: rgba(150, 222, 182, 0.3);
+  --ambient-2: rgba(150, 185, 226, 0.24);
+  --ambient-3: rgba(226, 194, 184, 0.18);
+  --ambient-base: rgba(44, 66, 64, 0.55);
+  --glass: linear-gradient(165deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.06));
+  --glass-strong: rgba(64, 88, 84, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-highlight: rgba(255, 255, 255, 0.26);
+  --window-ring: rgba(255, 255, 255, 0.2);
+  --shadow: 0 14px 44px rgba(8, 20, 16, 0.28), 0 2px 8px rgba(8, 20, 16, 0.14);
+  --hover: rgba(255, 255, 255, 0.12);
+  --cell: rgba(255, 255, 255, 0.1);
+  --cell-edge: rgba(255, 255, 255, 0.16);
 }
 
 * {
@@ -79,25 +81,36 @@ body {
 }
 
 /* 环境光层:三处彩色光斑 + 基底,半透明以透出原生 vibrancy */
-html {
-  background-color: transparent;
-  background-image:
-    radial-gradient(120% 90% at 12% 0%, var(--ambient-1), transparent 55%),
-    radial-gradient(100% 80% at 100% 20%, var(--ambient-2), transparent 60%),
-    radial-gradient(120% 100% at 50% 110%, var(--ambient-3), transparent 55%),
-    linear-gradient(var(--ambient-base), var(--ambient-base));
-}
-
+html,
 body {
-  color: var(--text);
+  background: transparent;
 }
 
+/* 窗口层:随窗口圆角裁切,环境光渐变铺在圆角内;::after 画一圈内嵌高光环 */
 #app {
+  position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 10px 14px 14px;
+  border-radius: var(--window-radius);
+  overflow: hidden;
+  background-image:
+    radial-gradient(120% 90% at 12% 0%, var(--ambient-1), transparent 55%),
+    radial-gradient(100% 80% at 100% 20%, var(--ambient-2), transparent 60%),
+    radial-gradient(120% 100% at 50% 110%, var(--ambient-3), transparent 55%),
+    linear-gradient(var(--ambient-base), var(--ambient-base));
+  color: var(--text);
+}
+
+#app::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--window-ring);
+  pointer-events: none;
 }
 
 /* ---- 玻璃面板基底 ---- */
@@ -118,9 +131,9 @@ body {
   flex: 0 0 36px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 12px;
   -webkit-app-region: drag;
-  padding: 0 6px 0 10px;
+  padding: 0 10px;
 }
 
 .titlebar-brand {
@@ -145,32 +158,60 @@ body {
   font-size: 13px;
 }
 
-.titlebar-controls {
+/* 红绿灯窗口控制:纯色玻璃圆钮,悬停整组时浮现符号 */
+.traffic {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 8px;
   -webkit-app-region: no-drag;
 }
 
-.win-btn {
-  width: 38px;
-  height: 26px;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-sm);
-  color: var(--text-dim);
-  font-size: 11px;
+.tl {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background 0.15s var(--ease);
+  position: relative;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  transition: filter 0.15s var(--ease);
 }
 
-.win-btn:hover {
-  background: var(--hover);
-  color: var(--text);
+.tl:hover {
+  filter: brightness(1.06);
 }
 
-.win-close:hover {
-  background: #e05555;
-  color: #fff;
+.tl:active {
+  filter: brightness(0.88);
+}
+
+.tl-close {
+  background: #ff5f57;
+}
+
+.tl-min {
+  background: #febc2e;
+}
+
+.tl-max {
+  background: #28c840;
+}
+
+.tl-glyph {
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 700;
+  color: rgba(20, 30, 26, 0.6);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.traffic:hover .tl-glyph {
+  opacity: 1;
 }
 
 /* ---- Tab 栏(悬浮药丸) ---- */
@@ -592,7 +633,9 @@ button {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(10, 16, 14, 0.3);
+  border-radius: var(--window-radius);
+  overflow: hidden;
+  background: rgba(24, 40, 34, 0.28);
   backdrop-filter: blur(6px) saturate(1.2);
   display: flex;
   align-items: center;

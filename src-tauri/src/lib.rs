@@ -7,6 +7,7 @@ use std::sync::Mutex;
 use tauri::Manager;
 
 /// 按平台应用原生磨砂玻璃效果。
+/// 圆角与前端 --window-radius 保持一致,窗口四角由 vibrancy 与内容同时裁圆。
 fn apply_window_effects(window: &tauri::WebviewWindow) {
     use tauri::utils::config::WindowEffectsConfig;
     #[cfg(target_os = "macos")]
@@ -15,7 +16,7 @@ fn apply_window_effects(window: &tauri::WebviewWindow) {
         let _ = window.set_effects(WindowEffectsConfig {
             effects: vec![WindowEffect::UnderWindowBackground],
             state: Some(WindowEffectState::Active),
-            radius: None,
+            radius: Some(22.0),
             color: None,
         });
     }
@@ -25,7 +26,7 @@ fn apply_window_effects(window: &tauri::WebviewWindow) {
         let _ = window.set_effects(WindowEffectsConfig {
             effects: vec![WindowEffect::Acrylic],
             state: Some(WindowEffectState::Active),
-            radius: None,
+            radius: Some(22.0),
             color: None,
         });
     }
