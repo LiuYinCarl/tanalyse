@@ -92,27 +92,40 @@ export function createGridView(store: AppStore): GridView {
     dateLabel.replaceChildren(formatDayLabel(store.viewDay));
   }
 
+  /**
+   * 格子的水彩式填充:30 分钟内不做视觉切分,以一段连续渐变表达内容——
+   * 整格同分类 → 纯色;部分填充 → 向空档渐隐;混合分类 → 两色平滑过渡。
+   * 空格子返回 null,由 CSS 提供底色。
+   */
+  function cellBackground(states: (string | null)[]): string | null {
+    const colors = states.map(
+      (id) => (id ? store.data.categories.find((c) => c.id === id)?.color ?? "var(--accent)" : null),
+    );
+    if (colors.every((c) => c === null)) return null;
+    const first = colors[0];
+    if (first !== null && colors.every((c) => c === first)) return first;
+    // 三个色标取各 10 分钟段的中心,过渡柔和、无生硬边界
+    const stops = colors
+      .map((c, i) => `${c ?? "transparent"} ${[10, 50, 90][i]}%`)
+      .join(", ");
+    return `linear-gradient(90deg, ${stops})`;
+  }
+
   /** 构造一个 30 分钟格子。day/nowSlot 由 renderGrid 一次算好共享,避免逐格重建。 */
   function makeCell(slot: number, day: Day, nowSlot: number): HTMLElement {
     const base = slot * 3;
     const states = [day[base], day[base + 1], day[base + 2]];
-    const colorOf = (id: string | null): string =>
-      store.data.categories.find((c) => c.id === id)?.color ?? "var(--accent)";
-
-    const subs = states.map((id) =>
-      h("span", {
-        class: "sub",
-        style: id ? `background: ${colorOf(id)}` : "",
-      }),
-    );
+    const background = cellBackground(states);
     const cell = h(
       "div",
       {
-        class: `cell${slot === nowSlot && store.viewDay === todayKey() ? " cell-now" : ""}`,
+        class: `cell${background ? " cell-has" : ""}${
+          slot === nowSlot && store.viewDay === todayKey() ? " cell-now" : ""
+        }`,
+        style: background ? `background: ${background}` : "",
         "data-slot": String(slot),
         role: "button",
       },
-      ...subs,
     );
     cell.addEventListener("mouseenter", () => {
       cell.title = slotTooltip(store.data, store.viewDay, slot);
