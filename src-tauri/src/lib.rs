@@ -3,11 +3,9 @@
 pub mod commands;
 pub mod data_io;
 
-use std::sync::Mutex;
-use tauri::Manager;
-
 /// 按平台应用原生磨砂玻璃效果。
 /// 圆角与前端 --window-radius 保持一致,窗口四角由 vibrancy 与内容同时裁圆。
+#[cfg(not(fuzzing))]
 fn apply_window_effects(window: &tauri::WebviewWindow) {
     // 只有 macOS/Windows 分支用到;Linux 下这条 import 会被 -D warnings 判成未使用
     #[cfg(any(target_os = "macos", target_os = "windows"))]
@@ -39,7 +37,15 @@ fn apply_window_effects(window: &tauri::WebviewWindow) {
 }
 
 /// 组装并运行应用。
+///
+/// 模糊测试只针对 `data_io` 的纯逻辑,不需要(也不应该)拉起 Tauri 上下文:
+/// `generate_context!` 会去读前端产物与 tauri.conf.json,在 fuzz 构建下既慢又脆。
+/// cargo-fuzz 构建时带 --cfg fuzzing,这里据此裁掉启动胶水。
+#[cfg(not(fuzzing))]
 pub fn run() {
+    use std::sync::Mutex;
+    use tauri::Manager;
+
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
