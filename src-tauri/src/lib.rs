@@ -9,6 +9,8 @@ use tauri::Manager;
 /// 按平台应用原生磨砂玻璃效果。
 /// 圆角与前端 --window-radius 保持一致,窗口四角由 vibrancy 与内容同时裁圆。
 fn apply_window_effects(window: &tauri::WebviewWindow) {
+    // 只有 macOS/Windows 分支用到;Linux 下这条 import 会被 -D warnings 判成未使用
+    #[cfg(any(target_os = "macos", target_os = "windows"))]
     use tauri::utils::config::WindowEffectsConfig;
     #[cfg(target_os = "macos")]
     {
