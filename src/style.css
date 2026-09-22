@@ -1,24 +1,27 @@
-/* tanalyse · 液态玻璃风格(Apple Liquid Glass 参考)
+/* tanalyse · 玻璃质感界面
  *
- * 分层结构:
- *   1. 窗口层(#app):随窗口圆角裁切,内部铺半透明环境光渐变,
- *      给玻璃提供"可折射"的色彩;macOS 上与原生 vibrancy(同半径圆角)叠加。
- *   2. 玻璃面板(.glass):高斯模糊 + 饱和度提升 + 顶部内描边高光 + 柔和投影。
- *   3. 组件层:药丸 Tab、玻璃分段控件、发光的激活态。
+ * 分层只有两层,避免"玻璃叠玻璃"糊成一团:
+ *   1. 窗口层(#app):一层半透明底色 + 极淡的环境色光,
+ *      macOS/Windows 下与原生 vibrancy / Acrylic 叠加。
+ *      底色不透明度偏高(≈0.8),保证浅色/深色切换时观感明确;
+ *      原生材质由后端 set_window_theme 跟随应用主题(否则深色会停在系统浅色上)。
+ *   2. 面板层(.glass):一层薄玻璃 —— 低对比渐变 + 1px 发丝描边 + 柔和投影。
+ *      投影只保留两层很浅的阴影,不再给每个面板压一块重阴影。
  * 主题经 data-theme(light/dark)切换,--accent 为主题色(默认浅绿,同图标)。
  */
 
 :root {
   --accent: #8fcba8;
   --accent-deep: #4f8f6d;
-  --heat-empty: #00000012;
+  --accent-soft: #dcebe2;
+  --heat-empty: #00000010;
   --window-radius: 22px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
     "Segoe UI", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-  --radius-lg: 20px;
-  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-md: 11px;
   --radius-sm: 8px;
 }
 
@@ -26,43 +29,48 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --text: #1d2b25;
-  --text-dim: #63756d;
-  /* 环境光:浅绿为主,一角偏蓝、一角偏暖,柔和混色 */
-  --ambient-1: rgba(143, 203, 168, 0.5);
-  --ambient-2: rgba(162, 185, 199, 0.34);
-  --ambient-3: rgba(200, 182, 166, 0.3);
-  --ambient-base: rgba(244, 250, 246, 0.35);
-  /* 玻璃:亮面白玻璃 */
-  --glass: linear-gradient(165deg, rgba(255, 255, 255, 0.62), rgba(255, 255, 255, 0.34));
-  --glass-strong: rgba(255, 255, 255, 0.74);
+  --text: #16211c;
+  --text-dim: #56645c;
+  --text-faint: #7b8880;
+  /* 环境色光:只在角落留一点气息,避免整屏被绿色糊住 */
+  --ambient-1: rgba(140, 200, 168, 0.2);
+  --ambient-2: rgba(150, 178, 205, 0.16);
+  --ambient-3: rgba(205, 185, 170, 0.14);
+  --window-base: rgba(246, 249, 247, 0.82);
+  /* 玻璃:亮面但不过曝,顶部略亮、底部略沉 */
+  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.42));
+  --glass-strong: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.6);
-  --glass-highlight: rgba(255, 255, 255, 0.85);
-  --window-ring: rgba(255, 255, 255, 0.75);
-  --shadow: 0 12px 40px rgba(31, 58, 45, 0.16), 0 2px 8px rgba(31, 58, 45, 0.06);
-  --hover: rgba(29, 60, 45, 0.07);
-  --cell: rgba(29, 60, 45, 0.06);
-  --cell-edge: rgba(90, 110, 100, 0.16);
+  --glass-highlight: rgba(255, 255, 255, 0.75);
+  --panel-line: rgba(22, 33, 28, 0.08);
+  --window-ring: rgba(255, 255, 255, 0.55);
+  --shadow: 0 1px 2px rgba(18, 38, 28, 0.05), 0 10px 26px rgba(18, 38, 28, 0.07);
+  --hover: rgba(22, 55, 38, 0.06);
+  --cell: rgba(22, 48, 35, 0.05);
+  --cell-empty: rgba(22, 48, 35, 0.05);
+  --cell-edge: rgba(60, 90, 75, 0.16);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  /* 暮色玻璃:整体提亮为灰绿奶白,避免深黑 */
-  --text: #f4f9f6;
-  --text-dim: #c2d2ca;
-  --ambient-1: rgba(150, 222, 182, 0.3);
-  --ambient-2: rgba(150, 185, 226, 0.24);
-  --ambient-3: rgba(226, 194, 184, 0.18);
-  --ambient-base: rgba(44, 66, 64, 0.55);
-  --glass: linear-gradient(165deg, rgba(255, 255, 255, 0.17), rgba(255, 255, 255, 0.06));
-  --glass-strong: rgba(64, 88, 84, 0.55);
-  --glass-border: rgba(255, 255, 255, 0.22);
-  --glass-highlight: rgba(255, 255, 255, 0.26);
-  --window-ring: rgba(255, 255, 255, 0.2);
-  --shadow: 0 14px 44px rgba(8, 20, 16, 0.28), 0 2px 8px rgba(8, 20, 16, 0.14);
-  --hover: rgba(255, 255, 255, 0.12);
-  --cell: rgba(255, 255, 255, 0.1);
-  --cell-edge: rgba(255, 255, 255, 0.16);
+  --text: #eef3f0;
+  --text-dim: #a7b5ad;
+  --text-faint: #8b988f;
+  --ambient-1: rgba(120, 200, 160, 0.14);
+  --ambient-2: rgba(120, 158, 205, 0.12);
+  --ambient-3: rgba(205, 165, 155, 0.09);
+  --window-base: rgba(20, 24, 23, 0.8);
+  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+  --glass-strong: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-highlight: rgba(255, 255, 255, 0.12);
+  --panel-line: rgba(255, 255, 255, 0.09);
+  --window-ring: rgba(255, 255, 255, 0.1);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 30px rgba(0, 0, 0, 0.28);
+  --hover: rgba(255, 255, 255, 0.07);
+  --cell: rgba(255, 255, 255, 0.055);
+  --cell-empty: rgba(255, 255, 255, 0.05);
+  --cell-edge: rgba(255, 255, 255, 0.12);
 }
 
 * {
@@ -77,16 +85,17 @@ body {
   font-family: var(--font);
   font-size: 13px;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   user-select: none;
 }
 
-/* 环境光层:三处彩色光斑 + 基底,半透明以透出原生 vibrancy */
+/* 窗口透明:底色与环境光由 #app 画,原生 vibrancy 透出来当"磨砂底" */
 html,
 body {
   background: transparent;
 }
 
-/* 窗口层:随窗口圆角裁切,环境光渐变铺在圆角内;::after 画一圈内嵌高光环 */
+/* 窗口层:: 半透明底色 + 环境色光;::after 画一圈内嵌发丝高光 */
 #app {
   position: relative;
   height: 100vh;
@@ -97,10 +106,10 @@ body {
   border-radius: var(--window-radius);
   overflow: hidden;
   background-image:
-    radial-gradient(120% 90% at 12% 0%, var(--ambient-1), transparent 55%),
-    radial-gradient(100% 80% at 100% 20%, var(--ambient-2), transparent 60%),
-    radial-gradient(120% 100% at 50% 110%, var(--ambient-3), transparent 55%),
-    linear-gradient(var(--ambient-base), var(--ambient-base));
+    radial-gradient(120% 90% at 8% -10%, var(--ambient-1), transparent 55%),
+    radial-gradient(100% 80% at 100% 8%, var(--ambient-2), transparent 58%),
+    radial-gradient(120% 100% at 50% 112%, var(--ambient-3), transparent 55%),
+    linear-gradient(var(--window-base), var(--window-base));
   color: var(--text);
 }
 
@@ -117,8 +126,8 @@ body {
 
 .glass {
   background: var(--glass);
-  backdrop-filter: blur(20px) saturate(1.8);
-  -webkit-backdrop-filter: blur(20px) saturate(1.8);
+  backdrop-filter: blur(16px) saturate(1.3);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow), inset 0 1px 0 var(--glass-highlight);
   border-radius: var(--radius-lg);
@@ -148,17 +157,17 @@ body {
   border-radius: 4.5px;
   background: linear-gradient(135deg, var(--accent), var(--accent-deep));
   box-shadow:
-    0 0 10px color-mix(in srgb, var(--accent) 55%, transparent),
-    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+    0 0 8px color-mix(in srgb, var(--accent) 45%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .brand-name {
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  font-size: 12.5px;
 }
 
-/* 红绿灯窗口控制:纯色玻璃圆钮,悬停整组时浮现符号 */
+/* 红绿灯窗口控制:纯色圆钮,悬停整组时浮现符号 */
 .traffic {
   display: flex;
   align-items: center;
@@ -167,17 +176,17 @@ body {
 }
 
 .tl {
-  width: 13px;
-  height: 13px;
+  width: 12px;
+  height: 12px;
   padding: 0;
   border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   position: relative;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
   transition: filter 0.15s var(--ease);
 }
 
@@ -202,7 +211,7 @@ body {
 }
 
 .tl-glyph {
-  font-size: 9px;
+  font-size: 8px;
   line-height: 1;
   font-weight: 700;
   color: rgba(20, 30, 26, 0.6);
@@ -214,27 +223,27 @@ body {
   opacity: 1;
 }
 
-/* ---- Tab 栏(悬浮药丸) ---- */
+/* ---- Tab 栏(悬浮分段控件) ---- */
 
 .tab-bar {
   flex: 0 0 auto;
   align-self: center;
   display: flex;
-  gap: 4px;
-  padding: 4px;
+  gap: 3px;
+  padding: 3px;
   border-radius: 999px;
 }
 
 .tab-btn {
   border: none;
   background: transparent;
-  padding: 7px 28px;
+  padding: 6px 24px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-family: var(--font);
   color: var(--text-dim);
   cursor: pointer;
-  transition: all 0.18s var(--ease);
+  transition: color 0.16s var(--ease), background 0.16s var(--ease);
 }
 
 .tab-btn:hover {
@@ -243,15 +252,15 @@ body {
 
 .tab-active {
   background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--accent) 34%, var(--glass-strong)),
+    180deg,
+    color-mix(in srgb, var(--accent) 15%, var(--glass-strong)),
     var(--glass-strong)
   );
   color: var(--text);
   font-weight: 600;
   box-shadow:
     inset 0 1px 0 var(--glass-highlight),
-    0 4px 14px color-mix(in srgb, var(--accent) 28%, transparent);
+    0 1px 3px rgba(16, 32, 24, 0.12);
 }
 
 /* ---- 通用控件 ---- */
@@ -261,7 +270,7 @@ button {
 }
 
 :focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--accent) 75%, transparent);
   outline-offset: 2px;
 }
 
@@ -273,39 +282,37 @@ button {
   padding: 5px 12px;
   font-size: 12px;
   cursor: pointer;
-  transition: all 0.15s var(--ease);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), box-shadow 0.15s var(--ease);
 }
 
 .btn:hover {
-  filter: brightness(1.06);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.btn:active {
-  transform: translateY(0);
+  border-color: var(--cell-edge);
+  box-shadow: 0 2px 8px rgba(16, 32, 24, 0.1);
 }
 
 .btn-ghost {
   background: transparent;
 }
 
+.btn-ghost:hover {
+  background: var(--hover);
+}
+
 .btn-primary {
-  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  background: linear-gradient(180deg, var(--accent), var(--accent-deep));
   border-color: transparent;
   color: #fff;
   font-weight: 600;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 42%, transparent);
 }
 
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
-  filter: brightness(1.07);
+  filter: brightness(1.06);
 }
 
 .btn-danger:hover {
-  color: #e07070;
-  border-color: rgba(224, 112, 112, 0.45);
+  color: #d9605f;
+  border-color: rgba(217, 96, 95, 0.45);
 }
 
 .icon-btn {
@@ -317,7 +324,7 @@ button {
   color: var(--text-dim);
   font-size: 15px;
   cursor: pointer;
-  transition: all 0.15s var(--ease);
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
 }
 
 .icon-btn:hover {
@@ -338,8 +345,8 @@ button {
 }
 
 .input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .toggle {
@@ -350,7 +357,7 @@ button {
   background: var(--hover);
   position: relative;
   cursor: pointer;
-  transition: all 0.18s var(--ease);
+  transition: background 0.18s var(--ease), border-color 0.18s var(--ease);
 }
 
 .toggle::after {
@@ -362,14 +369,13 @@ button {
   height: 18px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
-  transition: all 0.18s var(--ease);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.24);
+  transition: left 0.18s var(--ease);
 }
 
 .toggle-on {
-  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  background: linear-gradient(180deg, var(--accent), var(--accent-deep));
   border-color: transparent;
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 45%, transparent);
 }
 
 .toggle-on::after {
@@ -386,8 +392,8 @@ button {
 }
 
 .notice {
-  background: color-mix(in srgb, var(--accent) 16%, var(--glass-strong));
-  border: 1px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  background: color-mix(in srgb, var(--accent) 14%, var(--glass-strong));
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
   border-radius: var(--radius-md);
   padding: 7px 12px;
   color: var(--text);
@@ -432,8 +438,8 @@ button {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 7px;
+  padding: 7px 9px;
   border-radius: var(--radius-lg);
 }
 
@@ -443,12 +449,12 @@ button {
   gap: 7px;
   border: 1px solid transparent;
   background: transparent;
-  padding: 6px 15px;
+  padding: 5px 14px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-dim);
   cursor: pointer;
-  transition: all 0.16s var(--ease);
+  transition: background 0.16s var(--ease), border-color 0.16s var(--ease), color 0.16s var(--ease);
 }
 
 .cat-chip:hover {
@@ -457,13 +463,11 @@ button {
 }
 
 .cat-active {
-  background: color-mix(in srgb, var(--cat-color) 26%, var(--glass-strong));
-  border-color: color-mix(in srgb, var(--cat-color) 60%, transparent);
+  background: color-mix(in srgb, var(--cat-color) 18%, var(--glass-strong));
+  border-color: color-mix(in srgb, var(--cat-color) 48%, transparent);
   color: var(--text);
   font-weight: 600;
-  box-shadow:
-    inset 0 1px 0 var(--glass-highlight),
-    0 3px 12px color-mix(in srgb, var(--cat-color) 30%, transparent);
+  box-shadow: inset 0 1px 0 var(--glass-highlight);
 }
 
 .cat-add {
@@ -476,15 +480,16 @@ button {
 .date-nav {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
+  gap: 4px;
+  padding: 3px 7px;
   border-radius: 999px;
 }
 
 .date-label {
-  min-width: 130px;
+  min-width: 132px;
   text-align: center;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .hint {
@@ -495,15 +500,20 @@ button {
 /* ---- 热力图 ---- */
 
 .heatmap-box {
-  flex: 0 0 auto;
-  padding: 12px 14px;
+  /* 与下方日格子卡片等分剩余高度,两块内容各自居中 */
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 14px 14px;
 }
 
 .heatmap-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .heatmap-title {
@@ -552,7 +562,14 @@ button {
   stroke-width: 1.5;
 }
 
-/* ---- 日格子 ---- */
+/* ---- 日格子:48 个 30 分钟块,每块内含 3 个 10 分钟小格 ---- */
+
+.day-board {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  padding: 6px 12px 8px;
+}
 
 .day-grid {
   flex: 1;
@@ -560,20 +577,23 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 12px;
-  padding: 0 26px 8px;
+  gap: 10px;
+  padding: 0 2px;
 }
 
 .day-block {
-  flex: 0 0 auto;
+  flex: 1 1 0;
+  min-height: 0;
+  /* 封顶,避免窗口拉高时格子被拉成细长条 */
+  max-height: 104px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
 
 .grid-hours {
   flex: 0 0 auto;
-  height: 13px;
+  height: 12px;
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   gap: 0 3px;
@@ -583,48 +603,68 @@ button {
 .hour-label {
   grid-column: span 2;
   text-align: left;
-  font-size: 9px;
+  font-size: 9.5px;
   color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
 }
 
 .day-row {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(24, 1fr);
   gap: 0 3px;
 }
 
 .cell {
-  height: 58px;
+  min-height: 34px;
   border-radius: 10px;
+  /* 只有 2px 内边距:把 30 分钟横向切成三个 10 分钟小格 */
+  padding: 2px;
   background: var(--cell);
   cursor: pointer;
   border: 1px solid transparent;
-  transition: transform 0.1s var(--ease), border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.16s var(--ease),
+    border-color 0.16s var(--ease),
+    box-shadow 0.16s var(--ease),
+    transform 0.1s var(--ease);
 }
 
 .cell:hover {
+  background: var(--hover);
   border-color: var(--cell-edge);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
 }
 
 .cell:active {
-  transform: scale(0.96);
+  transform: scale(0.97);
 }
 
-/* 有内容的格子:一层极淡的顶部内高光,像玻璃上的反光 */
-.cell-has {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+.cell-parts {
+  display: flex;
+  /* 横向切分:三段上下叠放,从上到下即 0-10 / 10-20 / 20-30 分钟 */
+  flex-direction: column;
+  gap: 2px;
+  height: 100%;
 }
 
-.cell-has:hover {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    0 2px 10px rgba(0, 0, 0, 0.12);
+/* 未填的 10 分钟:留一条微弱底槽,看出这一段还空着 */
+.cell-part {
+  flex: 1 1 0;
+  border-radius: 5px;
+  background: var(--cell-empty);
 }
 
-.cell-now {
+/* 已填的 10 分钟:分类色 + 顶部一线反光,像玻璃上的高光 */
+.cell-part-on {
+  background: var(--part-color);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.cell-now,
+.cell-now:hover {
   border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent), 0 0 14px color-mix(in srgb, var(--accent) 40%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent);
 }
 
 /* ---- 弹窗(玻璃浮层) ---- */
@@ -634,8 +674,8 @@ button {
   inset: 0;
   border-radius: var(--window-radius);
   overflow: hidden;
-  background: rgba(24, 40, 34, 0.28);
-  backdrop-filter: blur(6px) saturate(1.2);
+  background: rgba(18, 30, 25, 0.24);
+  backdrop-filter: blur(6px) saturate(1.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -658,7 +698,7 @@ button {
 @keyframes pop-in {
   from {
     opacity: 0;
-    transform: scale(0.94) translateY(6px);
+    transform: scale(0.96) translateY(4px);
   }
   to {
     opacity: 1;
@@ -699,7 +739,7 @@ button {
   border-radius: 999px;
   cursor: pointer;
   font-size: 12px;
-  transition: all 0.15s var(--ease);
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease), color 0.15s var(--ease);
 }
 
 .chip:hover {
@@ -708,8 +748,8 @@ button {
 }
 
 .chip-active {
-  background: color-mix(in srgb, var(--chip-color, var(--accent)) 26%, var(--glass-strong));
-  border-color: color-mix(in srgb, var(--chip-color, var(--accent)) 60%, transparent);
+  background: color-mix(in srgb, var(--chip-color, var(--accent)) 18%, var(--glass-strong));
+  border-color: color-mix(in srgb, var(--chip-color, var(--accent)) 48%, transparent);
   color: var(--text);
   font-weight: 600;
 }
@@ -728,26 +768,25 @@ button {
   padding: 10px 8px;
   cursor: pointer;
   color: var(--text-dim);
-  transition: all 0.15s var(--ease);
+  transition: border-color 0.15s var(--ease), background 0.15s var(--ease);
 }
 
 .segment:hover {
   border-color: var(--cell-edge);
-  transform: translateY(-1px);
 }
 
 .segment-filled {
-  background: color-mix(in srgb, var(--seg-color, var(--accent)) 32%, var(--glass-strong));
-  border-color: color-mix(in srgb, var(--seg-color, var(--accent)) 62%, transparent);
+  background: color-mix(in srgb, var(--seg-color, var(--accent)) 26%, var(--glass-strong));
+  border-color: color-mix(in srgb, var(--seg-color, var(--accent)) 52%, transparent);
   color: var(--text);
   font-weight: 600;
-  box-shadow: 0 3px 12px color-mix(in srgb, var(--seg-color, var(--accent)) 26%, transparent);
 }
 
 .segment-time {
   font-size: 12px;
   font-weight: 700;
   margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .segment-state {
@@ -764,8 +803,8 @@ button {
 .range-bar {
   align-self: flex-start;
   display: inline-flex;
-  gap: 4px;
-  padding: 4px;
+  gap: 3px;
+  padding: 3px;
   border-radius: 999px;
 }
 
@@ -777,7 +816,7 @@ button {
   color: var(--text-dim);
   cursor: pointer;
   font-size: 12px;
-  transition: all 0.15s var(--ease);
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
 }
 
 .seg-btn:hover {
@@ -788,12 +827,12 @@ button {
   background: var(--glass-strong);
   color: var(--text);
   font-weight: 600;
-  box-shadow: inset 0 1px 0 var(--glass-highlight), inset 0 0 0 1px var(--glass-border);
+  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 3px rgba(16, 32, 24, 0.1);
 }
 
 .segmented {
   display: inline-flex;
-  gap: 3px;
+  gap: 2px;
   padding: 3px;
   border-radius: 999px;
   background: var(--hover);
@@ -810,8 +849,9 @@ button {
 }
 
 .summary-value {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 18px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary-label {
@@ -821,12 +861,15 @@ button {
 }
 
 .card {
-  padding: 14px 16px;
+  padding: 14px 16px 16px;
 }
 
+/* 卡片标题用一条发丝线收口,让每张卡片有明确的起点 */
 .card-title {
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-weight: 650;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--panel-line);
 }
 
 .card-desc {
@@ -881,10 +924,12 @@ button {
 .legend-min {
   color: var(--text-dim);
   min-width: 80px;
+  font-variant-numeric: tabular-nums;
 }
 
 .legend-pct {
-  font-weight: 700;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .line-svg {
@@ -935,6 +980,7 @@ button {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+  min-height: 26px;
 }
 
 .setting-label {
@@ -961,12 +1007,12 @@ button {
 }
 
 .swatch:hover {
-  transform: scale(1.12);
+  transform: scale(1.1);
 }
 
 .swatch-active {
   border-color: var(--text);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 14%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--text) 12%, transparent);
 }
 
 .swatch-sm {
@@ -978,7 +1024,7 @@ button {
 .category-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 7px;
 }
 
 .cat-row {
@@ -1029,7 +1075,7 @@ button {
 }
 
 .version {
-  color: var(--text-dim);
+  color: var(--text-faint);
   font-size: 11px;
 }
 
@@ -1047,4 +1093,12 @@ button {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--text-dim);
+}
+
+/* 系统开启"减弱动态效果"时去掉过渡 */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
 }

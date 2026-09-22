@@ -45,6 +45,8 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
 
   // ---- 日格子:两行(0-11 点 / 12-23 点),各自带小时标签 ----
   const gridEl = h("div", { class: "day-grid" });
+  // 与热力图同样的玻璃卡片,让"日格子"成为一块完整的记录面板
+  const dayBoard = h("div", { class: "day-board glass" }, gridEl);
 
   root.append(
     catBar,
@@ -55,7 +57,7 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
       h("div", { class: "hint" }, t("grid.hint")),
     ),
     heatmapBox,
-    gridEl,
+    dayBoard,
   );
 
   function shiftDay(delta: number): void {
@@ -98,41 +100,43 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
     dateLabel.replaceChildren(formatDayLabel(store.viewDay));
   }
 
-  /**
-   * 格子的水彩式填充:30 分钟内不做视觉切分,以一段连续渐变表达内容——
-   * 整格同分类 → 纯色;部分填充 → 向空档渐隐;混合分类 → 两色平滑过渡。
-   * 空格子返回 null,由 CSS 提供底色。
-   */
-  function cellBackground(states: (string | null)[]): string | null {
-    const colors = states.map(
-      (id) => (id ? store.data.categories.find((c) => c.id === id)?.color ?? "var(--accent)" : null),
-    );
-    if (colors.every((c) => c === null)) return null;
-    const first = colors[0];
-    if (first !== null && colors.every((c) => c === first)) return first;
-    // 三个色标取各 10 分钟段的中心,过渡柔和、无生硬边界
-    const stops = colors
-      .map((c, i) => `${c ?? "transparent"} ${[10, 50, 90][i]}%`)
-      .join(", ");
-    return `linear-gradient(90deg, ${stops})`;
+  /** 小格取色:未填返回 null(交给空档底色),分类缺失时回退主题色。 */
+  function colorOf(id: string | null): string | null {
+    if (!id) return null;
+    return store.data.categories.find((c) => c.id === id)?.color ?? "var(--accent)";
   }
 
-  /** 构造一个 30 分钟格子。day/nowSlot 由 renderGrid 一次算好共享,避免逐格重建。 */
+  /**
+   * 构造一个 30 分钟格子:内部按时间顺序横向切成 3 段 10 分钟小格(上下叠放),
+   * 每段独立取色 —— "填了哪一段、填的是什么"一眼可辨,
+   * 也不会像渐变那样把不同分类混成一条糊掉的色带。
+   * 整格空着时不生成小格,只留底色。day/nowSlot 由 renderGrid 算好共享。
+   */
   function makeCell(slot: number, day: Day, nowSlot: number): HTMLElement {
     const base = slot * 3;
     const states = [day[base], day[base + 1], day[base + 2]];
-    const background = cellBackground(states);
+    const hasContent = states.some((id) => id !== null);
     const cell = h(
       "div",
       {
-        class: `cell${background ? " cell-has" : ""}${
-          slot === nowSlot && store.viewDay === todayKey() ? " cell-now" : ""
-        }`,
-        style: background ? `background: ${background}` : "",
+        class: `cell${slot === nowSlot && store.viewDay === todayKey() ? " cell-now" : ""}`,
         "data-slot": String(slot),
         role: "button",
       },
     );
+    if (hasContent) {
+      const parts = h("div", { class: "cell-parts" });
+      for (const id of states) {
+        const color = colorOf(id);
+        parts.append(
+          h("span", {
+            class: `cell-part${color ? " cell-part-on" : ""}`,
+            style: color ? `--part-color: ${color}` : undefined,
+          }),
+        );
+      }
+      cell.append(parts);
+    }
     cell.addEventListener("mouseenter", () => {
       cell.title = slotTooltip(store.data, store.viewDay, slot);
     });
