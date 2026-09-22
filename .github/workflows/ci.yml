@@ -40,7 +40,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy, rustfmt
+          # llvm-tools-preview 是 cargo-llvm-cov 的前置组件
+          components: clippy, rustfmt, llvm-tools-preview
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
       - uses: swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
@@ -83,5 +87,5 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libfuse2
       - name: 运行 60 秒模糊测试
         # cargo-fuzz 在 Linux 默认挑 musl target,而 ASAN 与静态链接的 libc 不兼容,
-        # 必须显式指定 gnu target(即宿主 target)。
-        run: cargo fuzz run parse_data --fuzz-dir fuzz -target x86_64-unknown-linux-gnu -- -max_total_time=60
+        # 必须显式指定 gnu target(即宿主 target);该选项只有长名字,没有 -t。
+        run: cargo fuzz run parse_data --fuzz-dir fuzz --target x86_64-unknown-linux-gnu -- -max_total_time=60
