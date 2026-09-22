@@ -8,7 +8,7 @@ import { createHeatmap } from "./ui/heatmap.ts";
 import { createStatsView } from "./ui/stats.ts";
 import { createSettingsView } from "./ui/settings.ts";
 import { AppStore } from "./state.ts";
-import { invoke } from "./bridge.ts";
+import { invoke, setWindowTheme } from "./bridge.ts";
 import { hexMix } from "./logic/color.ts";
 import { APP_VERSION } from "./logic/schema.ts";
 import { EV } from "./ui/events.ts";
@@ -34,8 +34,11 @@ function applyTheme(store: AppStore): void {
   rootEl.dataset.theme = theme;
   const accent = store.data.settings.accentColor;
   rootEl.style.setProperty("--accent", accent);
-  rootEl.style.setProperty("--accent-soft", hexMix(accent, theme === "dark" ? "#0e1116" : "#f4f7f5", 0.65));
-  rootEl.style.setProperty("--heat-empty", theme === "dark" ? "#ffffff14" : "#00000012");
+  rootEl.style.setProperty("--accent-soft", hexMix(accent, theme === "dark" ? "#141816" : "#f6f8f7", 0.72));
+  rootEl.style.setProperty("--accent-deep", hexMix(accent, "#1b2420", theme === "dark" ? 0.34 : 0.45));
+  rootEl.style.setProperty("--heat-empty", theme === "dark" ? "#ffffff12" : "#00000010");
+  // 原生 vibrancy/Acrylic 不会自己跟随应用主题,必须显式同步窗口外观
+  void setWindowTheme(theme);
 }
 
 async function main(): Promise<void> {

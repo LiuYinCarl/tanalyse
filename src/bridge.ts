@@ -5,6 +5,7 @@
 
 type Cmd =
   | "get_data_path"
+  | "set_window_theme"
   | "load_data"
   | "save_data"
   | "export_data_to"
@@ -39,12 +40,29 @@ function browserFallback<T>(cmd: Cmd, args?: Record<string, unknown>): Promise<T
       return Promise.resolve(null as T);
     case "app_version":
       return Promise.resolve("1.0.0" as T);
+    case "set_window_theme":
+      // 浏览器没有原生窗口层,主题只由 CSS 变量承担
+      return Promise.resolve(null as T);
   }
 }
 
 export function invoke<T = unknown>(cmd: Cmd, args?: Record<string, unknown>): Promise<T> {
   if (isTauri) return tauriInvoke<T>(cmd, args);
   return browserFallback<T>(cmd, args);
+}
+
+/**
+ * 让原生窗口外观跟随应用主题。
+ * 原生 vibrancy / Acrylic 按窗口外观取材质,只改 CSS 会让深色模式停在系统主题上。
+ * 浏览器调试环境没有原生层,静默忽略。
+ */
+export async function setWindowTheme(theme: "light" | "dark"): Promise<void> {
+  if (!isTauri) return;
+  try {
+    await invoke("set_window_theme", { theme });
+  } catch {
+    // 旧版本后端没有该命令时不影响前端主题
+  }
 }
 
 // ---- 插件封装(仅在 Tauri 下真正生效)----

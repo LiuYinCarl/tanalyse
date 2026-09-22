@@ -13,12 +13,36 @@ pub struct AppState {
 pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
         app_version,
+        set_window_theme,
         get_data_path,
         load_data,
         save_data,
         export_data_to,
         import_data_from
     ]
+}
+
+/// 主题名 → 原生窗口外观。无法识别(含 "system")时返回 None,交还系统决定。
+fn parse_window_theme(name: &str) -> Option<tauri::Theme> {
+    match name {
+        "light" => Some(tauri::Theme::Light),
+        "dark" => Some(tauri::Theme::Dark),
+        _ => None,
+    }
+}
+
+/// 让原生窗口外观跟随应用主题。
+///
+/// macOS 的 vibrancy(NSVisualEffectView)与 Windows 的 Acrylic 都按窗口外观取材质:
+/// 若只改页面里的 CSS 变量,原生那层仍停留在系统主题,深色模式会变成浑浊的中间灰。
+#[tauri::command]
+fn set_window_theme<R: tauri::Runtime>(
+    window: tauri::WebviewWindow<R>,
+    theme: String,
+) -> Result<(), String> {
+    window
+        .set_theme(parse_window_theme(&theme))
+        .map_err(|e| e.to_string())
 }
 
 fn data_file_of(state: &tauri::State<'_, AppState>) -> Result<PathBuf, String> {
@@ -76,6 +100,31 @@ mod tests {
     #[test]
     fn app_version_matches_cargo_pkg() {
         assert_eq!(app_version(), env!("CARGO_PKG_VERSION"));
+    }
+
+    #[test]
+    fn parse_window_theme_maps_known_modes() {
+        assert!(matches!(
+            parse_window_theme("light"),
+            Some(tauri::Theme::Light)
+        ));
+        assert!(matches!(
+            parse_window_theme("dark"),
+            Some(tauri::Theme::Dark)
+        ));
+        // 未知/系统:交还系统决定(None),而不是误判成浅色
+        assert!(parse_window_theme("system").is_none());
+        assert!(parse_window_theme("").is_none());
+    }
+
+    #[test]
+    fn set_window_theme_applies_to_mock_window() {
+        let app = mock_app();
+        let window = tauri::WebviewWindowBuilder::new(&app, "main", tauri::WebviewUrl::default())
+            .build()
+            .expect("mock window");
+        assert!(set_window_theme(window.clone(), "dark".to_string()).is_ok());
+        assert!(set_window_theme(window, "system".to_string()).is_ok());
     }
 
     #[test]
