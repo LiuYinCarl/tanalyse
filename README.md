@@ -65,8 +65,8 @@ make release     # 发布构建(先跑 check 与 test)
 发版流程:
 
 ```bash
-git tag v1.0.0
-git push origin v1.0.0
+git tag v1.1.0
+git push origin v1.1.0
 ```
 
 ## 数据格式
@@ -74,7 +74,7 @@ git push origin v1.0.0
 ```json
 {
   "version": "1.0.0",
-  "appVersion": "1.0.0",
+  "appVersion": "1.1.0",
   "categories": [
     { "id": "work", "name": "工作", "color": "#9caf9f", "builtin": "work" }
   ],

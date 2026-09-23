@@ -11,7 +11,7 @@ import { compareSemver } from "./version.ts";
 /** 数据文件的 schema 版本(语义版本号)。 */
 export const DATA_VERSION = "1.0.0";
 /** 当前应用版本(与 package.json / Cargo.toml 保持一致)。 */
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.1.0";
 
 export const SLOTS_PER_DAY = 48; // 24h × 30min
 export const SUB_SLOTS = 3; // 弹窗把 30 分钟切成 3 份

@@ -3,6 +3,8 @@
  * 在纯浏览器里(开发/测试)自动降级到 localStorage,便于 UI 调试。
  */
 
+import { APP_VERSION } from "./logic/schema.ts";
+
 type Cmd =
   | "get_data_path"
   | "set_window_theme"
@@ -39,7 +41,7 @@ function browserFallback<T>(cmd: Cmd, args?: Record<string, unknown>): Promise<T
     case "reveal_data_dir":
       return Promise.resolve(null as T);
     case "app_version":
-      return Promise.resolve("1.0.0" as T);
+      return Promise.resolve(APP_VERSION as T);
     case "set_window_theme":
       // 浏览器没有原生窗口层,主题只由 CSS 变量承担
       return Promise.resolve(null as T);

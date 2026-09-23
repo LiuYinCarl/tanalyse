@@ -4,6 +4,7 @@ import { h, clear } from "./dom.ts";
 import { AppStore } from "../state.ts";
 import {
   ACCENT_CHOICES,
+  APP_VERSION,
   DATA_VERSION,
   MORANDI_PALETTE,
   isBuiltinCategory,
@@ -344,7 +345,7 @@ export function createSettingsView(store: AppStore): SettingsView {
     try {
       return await invoke<string>("app_version");
     } catch {
-      return "1.0.0";
+      return APP_VERSION;
     }
   }
 

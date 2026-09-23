@@ -1,7 +1,7 @@
 {
   "name": "tanalyse",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "tanalyse · 极简时间块记录:30 分钟格子 + GitHub 提交图 + 统计",
   "type": "module",
   "scripts": {

@@ -1,6 +1,6 @@
 [package]
 name = "tanalyse"
-version = "1.0.0"
+version = "1.1.0"
 description = "tanalyse · 极简时间块记录"
 authors = ["kenshin"]
 edition = "2021"
