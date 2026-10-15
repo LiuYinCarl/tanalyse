@@ -1,56 +1,111 @@
-/** 自定义标题栏:macOS 式"红绿灯"窗口控制 + 拖拽区(仅 Tauri 下显示控制钮)。 */
+/**
+ * 自定义标题栏。
+ *
+ * 窗口控制钮随平台走:macOS 用左置"红绿灯",Windows/Linux 用右置系统式
+ * 最小化/最大化/关闭按钮(悬停高亮、关闭按钮红底)。符号一律用 CSS 画,
+ * 不依赖字体里的箭头/叉号字符,避免在缺字体的系统上显示成"豆腐块"。
+ * 仅 Tauri 环境渲染控制钮;浏览器预览只留拖拽条与品牌名。
+ */
 
 import { h } from "./dom.ts";
 import { isTauri } from "../bridge.ts";
+import { osKind } from "./platform.ts";
 import { t } from "../logic/i18n.ts";
 import type { MsgKey } from "../logic/i18n.ts";
+import type { Window as TauriWindow } from "@tauri-apps/api/window";
 
 export interface Titlebar {
   root: HTMLElement;
 }
 
-export function createTitlebar(appName: string): Titlebar {
-  // 红绿灯集群置于左侧(整体悬停时才浮现符号);无 Tauri 环境(浏览器预览)则不渲染
-  const cluster = h("div", { class: "traffic" });
+/** 惰性获取当前窗口:首次点击时才加载窗口 API,标题栏可同步渲染。 */
+let winPromise: Promise<TauriWindow> | null = null;
+function currentWindow(): Promise<TauriWindow> {
+  if (!winPromise) {
+    winPromise = import("@tauri-apps/api/window").then((m) => m.getCurrentWindow());
+  }
+  return winPromise;
+}
 
-  const root = h(
-    "header",
-    { class: "titlebar", "data-tauri-drag-region": "" },
-    cluster,
-    h(
-      "div",
-      { class: "titlebar-brand", "data-tauri-drag-region": "" },
-      h("span", { class: "brand-dot" }),
-      h("span", { class: "brand-name", "data-tauri-drag-region": "" }, appName),
-    ),
+/** 把"需要窗口实例的动作"包成可直接挂到 onclick 的处理器。 */
+function windowAction(fn: (win: TauriWindow) => Promise<unknown>): () => void {
+  return () => {
+    void currentWindow()
+      .then(fn)
+      .catch(() => {});
+  };
+}
+
+export function createTitlebar(appName: string): Titlebar {
+  const brand = h(
+    "div",
+    { class: "titlebar-brand", "data-tauri-drag-region": "" },
+    h("span", { class: "brand-dot" }),
+    h("span", { class: "brand-name", "data-tauri-drag-region": "" }, appName),
   );
 
+  const controls = h("div", { class: `window-controls window-controls-${osKind}` });
+
   if (isTauri) {
-    const light = (
-      kind: "close" | "min" | "max",
-      glyph: string,
-      titleKey: MsgKey,
-      action: () => Promise<void>,
-    ): HTMLElement =>
-      h(
-        "button",
-        {
-          class: `tl tl-${kind}`,
-          title: t(titleKey),
-          onclick: () => void action(),
+    if (osKind === "macos") {
+      const lights: { kind: string; key: MsgKey; run: (win: TauriWindow) => Promise<unknown> }[] = [
+        { kind: "close", key: "titlebar.close", run: (win) => win.close() },
+        { kind: "min", key: "titlebar.minimize", run: (win) => win.minimize() },
+        { kind: "max", key: "titlebar.maximize", run: (win) => win.toggleMaximize() },
+      ];
+      for (const { kind, key, run } of lights) {
+        controls.append(
+          h(
+            "button",
+            { class: `tl tl-${kind}`, title: t(key), onclick: windowAction(run) },
+            h("span", { class: "tl-glyph" }),
+          ),
+        );
+      }
+    } else {
+      const minBtn = h("button", {
+        class: "wbtn wbtn-min",
+        title: t("titlebar.minimize"),
+        onclick: windowAction((win) => win.minimize()),
+      });
+      const maxBtn = h("button", {
+        class: "wbtn wbtn-max",
+        title: t("titlebar.maximize"),
+        onclick: () => {
+          void currentWindow()
+            .then(async (win) => {
+              await win.toggleMaximize();
+              setMaximized(await win.isMaximized());
+            })
+            .catch(() => {});
         },
-        h("span", { class: "tl-glyph" }, glyph),
-      );
-    void (async () => {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const win = getCurrentWindow();
-      cluster.append(
-        light("close", "✕", "titlebar.close", () => win.close()),
-        light("min", "–", "titlebar.minimize", () => win.minimize()),
-        light("max", "⤢", "titlebar.maximize", () => win.toggleMaximize()),
-      );
-    })();
+      });
+      const closeBtn = h("button", {
+        class: "wbtn wbtn-close",
+        title: t("titlebar.close"),
+        onclick: windowAction((win) => win.close()),
+      });
+      controls.append(minBtn, maxBtn, closeBtn);
+
+      const setMaximized = (max: boolean): void => {
+        controls.classList.toggle("is-maximized", max);
+        maxBtn.title = t(max ? "titlebar.restore" : "titlebar.maximize");
+        // 最大化后铺满屏幕,圆角要收掉,否则四角会露出透明缺口
+        document.documentElement.dataset.maximized = max ? "true" : "false";
+      };
+      void currentWindow()
+        .then(async (win) => {
+          setMaximized(await win.isMaximized());
+          await win.onResized(async () => setMaximized(await win.isMaximized()));
+        })
+        .catch(() => {});
+    }
   }
+
+  const root = h("header", { class: "titlebar", "data-tauri-drag-region": "" });
+  // macOS:红绿灯在左、品牌名在右;Windows/Linux:品牌名在左、控制钮在右
+  if (osKind === "macos") root.append(controls, brand);
+  else root.append(brand, controls);
 
   return { root };
 }

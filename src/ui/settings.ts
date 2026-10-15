@@ -31,6 +31,8 @@ export interface SettingsView {
 export function createSettingsView(store: AppStore): SettingsView {
   const root = h("section", { class: "tab-panel settings-panel" });
   let dataPath = "";
+  /** 数据文件路径运行期不变,只取一次,避免每次重渲染都打 IPC */
+  let pathPromise: Promise<void> | null = null;
 
   function card(title: string): { card: HTMLElement; body: HTMLElement } {
     const c = h("div", { class: "card glass settings-card" });
@@ -81,7 +83,7 @@ export function createSettingsView(store: AppStore): SettingsView {
           class: `swatch ${store.data.settings.accentColor === color ? "swatch-active" : ""}`,
           style: `background: ${color}`,
           title: color,
-          "aria-label": `主题色 ${color}`,
+          "aria-label": t("settings.accentAria", { color }),
           onclick: () => {
             store.updateSettings({ accentColor: color });
           },
@@ -319,7 +321,7 @@ export function createSettingsView(store: AppStore): SettingsView {
               const raw = await invoke<string>("import_data_from", { path });
               const result = loadData(raw);
               if (result.readonly) {
-                alert("该文件由更新版本的 tanalyse 创建,当前版本只能只读查看,无法导入。");
+                alert(t("settings.importNewer"));
                 return;
               }
               store.replaceData(result.data);
@@ -353,7 +355,12 @@ export function createSettingsView(store: AppStore): SettingsView {
     renderAppearance();
     renderCategories();
     renderGeneral();
-    void refreshPath().then(() => void renderData());
+    void ensurePath().then(() => void renderData());
+  }
+
+  function ensurePath(): Promise<void> {
+    if (!pathPromise) pathPromise = refreshPath();
+    return pathPromise;
   }
 
   async function refreshPath(): Promise<void> {

@@ -1,20 +1,19 @@
 /* tanalyse · 玻璃质感界面
  *
  * 分层只有两层,避免"玻璃叠玻璃"糊成一团:
- *   1. 窗口层(#app):一层半透明底色 + 极淡的环境色光,
- *      macOS/Windows 下与原生 vibrancy / Acrylic 叠加。
+ *   1. 窗口层(#app):一层半透明底色(macOS 下与原生 vibrancy 叠加)。
  *      底色不透明度偏高(≈0.8),保证浅色/深色切换时观感明确;
  *      原生材质由后端 set_window_theme 跟随应用主题(否则深色会停在系统浅色上)。
- *   2. 面板层(.glass):一层薄玻璃 —— 低对比渐变 + 1px 发丝描边 + 柔和投影。
+ *   2. 面板层(.glass):一层薄玻璃 —— 纯色半透明 + 1px 发丝描边 + 柔和投影。
  *      投影只保留两层很浅的阴影,不再给每个面板压一块重阴影。
- * 主题经 data-theme(light/dark)切换,--accent 为主题色(默认浅绿,同图标)。
+ * 界面不使用渐变:所有底色/按钮都是纯色,--accent 为主题色(默认淡蓝)。
+ * 主题经 data-theme(light/dark)切换。
  */
 
 :root {
-  --accent: #8fcba8;
-  --accent-deep: #4f8f6d;
-  --accent-soft: #dcebe2;
-  --heat-empty: #00000010;
+  --accent: #7fb0dc;
+  --accent-deep: #527187;
+  --heat-empty: #00000016;
   --window-radius: 22px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
@@ -29,38 +28,35 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --text: #16211c;
-  --text-dim: #56645c;
-  --text-faint: #7b8880;
-  /* 环境色光:只在角落留一点气息,避免整屏被绿色糊住 */
-  --ambient-1: rgba(140, 200, 168, 0.2);
-  --ambient-2: rgba(150, 178, 205, 0.16);
-  --ambient-3: rgba(205, 185, 170, 0.14);
-  --window-base: rgba(246, 249, 247, 0.82);
-  /* 玻璃:亮面但不过曝,顶部略亮、底部略沉 */
-  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.42));
+  --text: #1a2230;
+  --text-dim: #5a6675;
+  --text-faint: #7c8797;
+  --window-base: rgba(244, 247, 251, 0.82);
+  /* 玻璃:纯色半透明,不叠渐变 */
+  --glass: rgba(255, 255, 255, 0.5);
   --glass-strong: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.6);
   --glass-highlight: rgba(255, 255, 255, 0.75);
-  --panel-line: rgba(22, 33, 28, 0.08);
+  --panel-line: rgba(26, 34, 48, 0.08);
   --window-ring: rgba(255, 255, 255, 0.55);
-  --shadow: 0 1px 2px rgba(18, 38, 28, 0.05), 0 10px 26px rgba(18, 38, 28, 0.07);
-  --hover: rgba(22, 55, 38, 0.06);
-  --cell: rgba(22, 48, 35, 0.05);
-  --cell-empty: rgba(22, 48, 35, 0.05);
-  --cell-edge: rgba(60, 90, 75, 0.16);
+  --shadow: 0 1px 2px rgba(20, 30, 45, 0.05), 0 10px 26px rgba(20, 30, 45, 0.07);
+  --hover: rgba(30, 50, 80, 0.06);
+  --cell: rgba(30, 45, 70, 0.05);
+  --cell-empty: rgba(30, 45, 70, 0.05);
+  --cell-edge: rgba(70, 90, 120, 0.16);
+  /* 柱状图:中性灰柱体,今天用主题色 */
+  --bar-fill: rgba(26, 34, 48, 0.32);
+  --bar-fill-hover: rgba(26, 34, 48, 0.46);
+  --bar-zero: rgba(26, 34, 48, 0.14);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --text: #eef3f0;
-  --text-dim: #a7b5ad;
-  --text-faint: #8b988f;
-  --ambient-1: rgba(120, 200, 160, 0.14);
-  --ambient-2: rgba(120, 158, 205, 0.12);
-  --ambient-3: rgba(205, 165, 155, 0.09);
-  --window-base: rgba(20, 24, 23, 0.8);
-  --glass: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.04));
+  --text: #eef2f7;
+  --text-dim: #a7b2c0;
+  --text-faint: #8b95a3;
+  --window-base: rgba(18, 22, 28, 0.8);
+  --glass: rgba(255, 255, 255, 0.06);
   --glass-strong: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.1);
   --glass-highlight: rgba(255, 255, 255, 0.12);
@@ -71,6 +67,9 @@
   --cell: rgba(255, 255, 255, 0.055);
   --cell-empty: rgba(255, 255, 255, 0.05);
   --cell-edge: rgba(255, 255, 255, 0.12);
+  --bar-fill: rgba(238, 242, 247, 0.34);
+  --bar-fill-hover: rgba(238, 242, 247, 0.5);
+  --bar-zero: rgba(238, 242, 247, 0.18);
 }
 
 * {
@@ -105,11 +104,7 @@ body {
   padding: 10px 14px 14px;
   border-radius: var(--window-radius);
   overflow: hidden;
-  background-image:
-    radial-gradient(120% 90% at 8% -10%, var(--ambient-1), transparent 55%),
-    radial-gradient(100% 80% at 100% 8%, var(--ambient-2), transparent 58%),
-    radial-gradient(120% 100% at 50% 112%, var(--ambient-3), transparent 55%),
-    linear-gradient(var(--window-base), var(--window-base));
+  background: var(--window-base);
   color: var(--text);
 }
 
@@ -145,6 +140,18 @@ body {
   padding: 0 10px;
 }
 
+/* Windows/Linux 的窗口按钮贴住右上角:右侧不留内边距,悬停底色才不会缺一角 */
+html[data-os="windows"] .titlebar,
+html[data-os="linux"] .titlebar {
+  padding-right: 0;
+}
+
+/* 最大化时铺满屏幕,收掉窗口圆角,避免四角露出透明缺口 */
+html[data-os="windows"][data-maximized="true"],
+html[data-os="linux"][data-maximized="true"] {
+  --window-radius: 0;
+}
+
 .titlebar-brand {
   display: flex;
   align-items: center;
@@ -155,7 +162,7 @@ body {
   width: 13px;
   height: 13px;
   border-radius: 4.5px;
-  background: linear-gradient(135deg, var(--accent), var(--accent-deep));
+  background: var(--accent);
   box-shadow:
     0 0 8px color-mix(in srgb, var(--accent) 45%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.5);
@@ -167,13 +174,24 @@ body {
   font-size: 12.5px;
 }
 
-/* 红绿灯窗口控制:纯色圆钮,悬停整组时浮现符号 */
-.traffic {
+/* 窗口控制钮:macOS 左置红绿灯,Windows/Linux 右置系统式按钮。
+ * 所有符号都用 CSS 画(不依赖字体字符),免得缺字体的系统显示成方块。 */
+.window-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
   -webkit-app-region: no-drag;
 }
+
+.window-controls-macos {
+  gap: 8px;
+}
+
+.window-controls-windows {
+  align-self: stretch;
+  margin-left: auto;
+}
+
+/* ---- macOS:红绿灯 ---- */
 
 .tl {
   width: 12px;
@@ -211,16 +229,144 @@ body {
 }
 
 .tl-glyph {
-  font-size: 8px;
-  line-height: 1;
-  font-weight: 700;
-  color: rgba(20, 30, 26, 0.6);
+  position: relative;
+  width: 8px;
+  height: 8px;
   opacity: 0;
   transition: opacity 0.12s ease;
 }
 
-.traffic:hover .tl-glyph {
+.window-controls-macos:hover .tl-glyph {
   opacity: 1;
+}
+
+.tl-glyph::before,
+.tl-glyph::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  background: rgba(20, 30, 26, 0.62);
+  border-radius: 1px;
+}
+
+/* 关闭 × */
+.tl-close .tl-glyph::before,
+.tl-close .tl-glyph::after {
+  width: 7px;
+  height: 1.4px;
+}
+.tl-close .tl-glyph::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.tl-close .tl-glyph::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+
+/* 最小化 − */
+.tl-min .tl-glyph::before {
+  width: 7px;
+  height: 1.4px;
+  transform: translate(-50%, -50%);
+}
+
+/* 最大化 □ */
+.tl-max .tl-glyph::before {
+  width: 6px;
+  height: 6px;
+  background: transparent;
+  border: 1.4px solid rgba(20, 30, 26, 0.62);
+  border-radius: 1.5px;
+  transform: translate(-50%, -50%);
+}
+
+/* ---- Windows/Linux:系统式标题栏按钮 ---- */
+
+.wbtn {
+  width: 46px;
+  height: 100%;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-dim);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.12s var(--ease), color 0.12s var(--ease);
+}
+
+.wbtn:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+.wbtn:active {
+  background: var(--cell-edge);
+}
+
+.wbtn-close:hover {
+  background: #e5484d;
+  color: #fff;
+}
+
+.wbtn-close:active {
+  background: #cf3f43;
+}
+
+.wbtn::before,
+.wbtn::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  border-radius: 1px;
+}
+
+.wbtn-min::before {
+  width: 11px;
+  height: 1.3px;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+.wbtn-min::after {
+  display: none;
+}
+
+/* 最大化:单方框;还原:两个错位方框 */
+.wbtn-max::before,
+.wbtn-max::after {
+  width: 10px;
+  height: 10px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+}
+.wbtn-max::after {
+  display: none;
+}
+.window-controls.is-maximized .wbtn-max::before {
+  transform: translate(calc(-50% - 2px), calc(-50% - 2px));
+}
+.window-controls.is-maximized .wbtn-max::after {
+  display: block;
+  border-radius: 1px;
+  transform: translate(calc(-50% + 2px), calc(-50% + 2px));
+}
+
+.wbtn-close::before,
+.wbtn-close::after {
+  width: 12px;
+  height: 1.3px;
+  background: currentColor;
+}
+.wbtn-close::before {
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+.wbtn-close::after {
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 /* ---- Tab 栏(悬浮分段控件) ---- */
@@ -251,11 +397,7 @@ body {
 }
 
 .tab-active {
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--accent) 15%, var(--glass-strong)),
-    var(--glass-strong)
-  );
+  background: color-mix(in srgb, var(--accent) 22%, var(--glass-strong));
   color: var(--text);
   font-weight: 600;
   box-shadow:
@@ -299,7 +441,7 @@ button {
 }
 
 .btn-primary {
-  background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+  background: var(--accent-deep);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
@@ -374,7 +516,7 @@ button {
 }
 
 .toggle-on {
-  background: linear-gradient(180deg, var(--accent), var(--accent-deep));
+  background: var(--accent-deep);
   border-color: transparent;
 }
 
@@ -517,9 +659,9 @@ button {
 }
 
 .heatmap-title {
-  font-weight: 600;
-  color: var(--text-dim);
-  font-size: 12px;
+  font-weight: 650;
+  color: var(--text);
+  font-size: 13px;
 }
 
 .heatmap-scroll {
@@ -543,7 +685,7 @@ button {
 
 .hm-text {
   fill: var(--text-dim);
-  font-size: 9px;
+  font-size: 9.5px;
   font-family: var(--font);
 }
 
@@ -798,78 +940,16 @@ button {
   justify-content: space-between;
 }
 
-/* ---- 统计 ---- */
-
-.range-bar {
-  align-self: flex-start;
-  display: inline-flex;
-  gap: 3px;
-  padding: 3px;
-  border-radius: 999px;
-}
-
-.seg-btn {
-  border: none;
-  background: transparent;
-  padding: 5px 14px;
-  border-radius: 999px;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 12px;
-  transition: color 0.15s var(--ease), background 0.15s var(--ease);
-}
-
-.seg-btn:hover {
-  color: var(--text);
-}
-
-.seg-active {
-  background: var(--glass-strong);
-  color: var(--text);
-  font-weight: 600;
-  box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 3px rgba(16, 32, 24, 0.1);
-}
-
-.segmented {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--hover);
-}
-
-.stat-summary {
-  display: flex;
-  gap: 10px;
-}
-
-.summary-item {
-  flex: 1;
-  padding: 12px 16px;
-}
-
-.summary-value {
-  font-size: 18px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-}
-
-.summary-label {
-  color: var(--text-dim);
-  font-size: 11px;
-  margin-top: 3px;
-}
+/* ---- 卡片与分段控件(统计/设置共用) ---- */
 
 .card {
   padding: 14px 16px 16px;
 }
 
-/* 卡片标题用一条发丝线收口,让每张卡片有明确的起点 */
+/* 参考图表的卡片标题:加粗一行,不带分隔线 */
 .card-title {
   font-weight: 650;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--panel-line);
+  margin-bottom: 10px;
 }
 
 .card-desc {
@@ -884,9 +964,12 @@ button {
   text-align: center;
 }
 
-.stat-pie-card {
-  display: flex;
-  flex-direction: column;
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--hover);
 }
 
 .pie-wrap {
@@ -932,20 +1015,148 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-.line-svg {
+/* ---- 统计 ---- */
+
+/* 上排:趋势卡(柱状图)+ 占比卡;窄窗口折叠为单列 */
+.stats-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(270px, 1fr);
+  gap: 10px;
+  align-items: stretch;
+}
+
+@media (max-width: 880px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.trend-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.trend-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.trend-pills {
+  flex: 0 0 auto;
+}
+
+.stat-pie-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.seg-btn {
+  border: none;
+  background: transparent;
+  padding: 5px 14px;
+  border-radius: 999px;
+  color: var(--text-dim);
+  cursor: pointer;
+  font-size: 12px;
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.seg-btn:hover {
+  color: var(--text);
+}
+
+/* 激活段:主题色实底白字,与参考图表的分段控件一致 */
+.seg-active,
+.seg-active:hover {
+  background: var(--accent-deep);
+  color: #fff;
+  font-weight: 600;
+}
+
+.big-value {
+  margin-top: 10px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+
+.big-sub {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.bar-box {
+  flex: 1 1 auto;
+  min-height: 190px;
+  margin-top: 8px;
+}
+
+.bar-svg {
+  display: block;
+}
+
+/* 命中区铺满整列,悬停/提示都落在列上 */
+.bar-hit {
+  fill: transparent;
+}
+
+.bar-rect {
+  fill: var(--bar-fill);
+  transition: fill 0.12s var(--ease);
+}
+
+.bar-rect:hover {
+  fill: var(--bar-fill-hover);
+}
+
+.bar-rect-now {
+  fill: var(--accent);
+}
+
+.bar-rect-now:hover {
+  fill: var(--accent-deep);
+}
+
+.bar-zero {
+  fill: var(--bar-zero);
+}
+
+.bar-zero-now {
+  fill: var(--accent);
+}
+
+.bar-value,
+.bar-xlabel {
+  fill: var(--text-dim);
+  font-size: 10px;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-value-now,
+.bar-xlabel-now {
+  fill: var(--accent);
+  font-weight: 650;
+}
+
+.line-box {
   width: 100%;
-  height: auto;
+}
+
+.line-svg {
+  display: block;
+  max-width: 100%;
 }
 
 .grid-line {
-  stroke: var(--cell-edge);
+  stroke: var(--panel-line);
   stroke-width: 1;
-}
-
-.axis-line {
-  stroke: var(--text-dim);
-  stroke-width: 1;
-  opacity: 0.5;
 }
 
 .line-legend {

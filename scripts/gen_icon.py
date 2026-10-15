@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """生成 tanalyse 应用图标源图(1024×1024 PNG)。
 
-浅绿色对角渐变圆角方块 + 白色“提交格子”(GitHub contribution 母题),
-其中一枚格子用深绿色点缀。仅依赖 Python 标准库。
+淡蓝色纯色圆角方块 + 白色“提交格子”(GitHub contribution 母题),
+其中一枚格子用深蓝色点缀。仅依赖 Python 标准库。
 """
 
 import math
@@ -12,12 +12,11 @@ import zlib
 
 SIZE = 1024
 RADIUS = 230
-# 渐变:左上浅绿 → 右下主题绿
-GRAD_FROM = (0xB4, 0xEC, 0xCB)
-GRAD_TO = (0x6E, 0xC6, 0x99)
-ACCENT_DEEP = (0x2F, 0x6B, 0x4F)
+# 底色:淡蓝纯色(不叠渐变)
+BG = (0x6F, 0xA8, 0xDC)
+ACCENT_DEEP = (0x2E, 0x63, 0x92)
 
-# 4×4 提交格子:alpha(0..1);1.0 的格子用深绿色点缀
+# 4×4 提交格子:alpha(0..1);1.0 的格子用深蓝色点缀
 GRID = [
     [0.95, 0.60, 0.80, 0.45],
     [0.55, 0.85, 0.50, 0.90],
@@ -53,10 +52,6 @@ def coverage(px, lo, hi):
     return min(left, right)
 
 
-def lerp(a, b, t):
-    return a + (b - a) * t
-
-
 def render() -> bytes:
     cell_w = ((GRID_AREA1 - GRID_AREA0) - CELL_GAP * (GRID_N - 1)) / GRID_N
     rows = []
@@ -71,16 +66,15 @@ def render() -> bytes:
         xb_all = SIZE - bg_inset
         x_lo = max(0, int(math.floor(xa_all)))
         x_hi = min(SIZE, int(math.ceil(xb_all)))
-        # 背景:对角渐变
+        # 背景:纯色
         for x in range(x_lo, x_hi):
-            t = (x + y) / (2 * (SIZE - 1))
             cov = coverage(x + 0.5, xa_all, xb_all)
             if cov <= 0:
                 continue
             o = x * 4
-            row[o] = int(lerp(GRAD_FROM[0], GRAD_TO[0], t) + 0.5)
-            row[o + 1] = int(lerp(GRAD_FROM[1], GRAD_TO[1], t) + 0.5)
-            row[o + 2] = int(lerp(GRAD_FROM[2], GRAD_TO[2], t) + 0.5)
+            row[o] = BG[0]
+            row[o + 1] = BG[1]
+            row[o + 2] = BG[2]
             row[o + 3] = int(255 * cov)
         # 提交格子
         for gy in range(GRID_N):

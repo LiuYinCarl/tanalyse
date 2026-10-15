@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeLineSeries, computePieSlices } from "./stats.ts";
+import {
+  bucketDayTotals,
+  computeDayBars,
+  computeLineSeries,
+  computePieSlices,
+  topRoundedBar,
+} from "./stats.ts";
 
 const TAU = Math.PI * 2;
 
@@ -52,11 +58,11 @@ describe("computeLineSeries", () => {
   it("空输入", () => {
     const out = computeLineSeries([], ["a"], 0, 0, 100, 100);
     expect(out.series).toEqual([]);
-    expect(out.yMax).toBe(30);
+    expect(out.yMax).toBe(120);
     expect(computeLineSeries([{ day: "2026-09-21", byCategory: { a: 10 } }], ["a"], 0, 0, 0, 0).series).toEqual([]);
   });
 
-  it("y 轴最大值向上取整到 30 分钟倍数", () => {
+  it("y 轴最大值向上取整到 120 分钟倍数", () => {
     const out = computeLineSeries(
       [{ day: "2026-09-21", byCategory: { a: 65 } }],
       ["a"],
@@ -65,7 +71,9 @@ describe("computeLineSeries", () => {
       100,
       100,
     );
-    expect(out.yMax).toBe(90);
+    expect(out.yMax).toBe(120);
+    // 刻度都是 30 分钟整倍数
+    for (const tick of out.yTicks) expect(tick % 30).toBe(0);
   });
 
   it("点数与天数一致,单天居中", () => {
@@ -89,7 +97,7 @@ describe("computeLineSeries", () => {
     const out = computeLineSeries(
       [
         { day: "2026-09-20", byCategory: { a: 30 } },
-        { day: "2026-09-21", byCategory: { a: 300 } },
+        { day: "2026-09-21", byCategory: { a: 360 } },
         { day: "2026-09-22", byCategory: { a: 0 } },
       ],
       ["a"],
@@ -99,7 +107,7 @@ describe("computeLineSeries", () => {
       100,
     );
     const [p0, p1, p2] = out.series[0].points;
-    expect(out.yMax).toBe(300);
+    expect(out.yMax).toBe(360);
     expect(p1.y).toBe(10); // padT 顶部
     expect(p2.y).toBe(110); // y0 = padT + height 底部
     expect(p0.y).toBeGreaterThan(p1.y);
@@ -118,5 +126,132 @@ describe("computeLineSeries", () => {
     );
     expect(out.xTicks.length).toBeLessThanOrEqual(6);
     expect(out.xTicks.length).toBeGreaterThanOrEqual(5);
+  });
+});
+
+/** 生成从 start 开始连续 n 天的逐天输入。 */
+function genDays(n: number, start = "2026-01-01"): { day: string; total: number }[] {
+  const out: { day: string; total: number }[] = [];
+  let cur = start;
+  for (let i = 0; i < n; i++) {
+    out.push({ day: cur, total: (i % 5) * 30 });
+    const d = new Date(`${cur}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    cur = d.toISOString().slice(0, 10);
+  }
+  return out;
+}
+
+describe("bucketDayTotals", () => {
+  it("空输入返回空数组", () => {
+    expect(bucketDayTotals([])).toEqual([]);
+  });
+
+  it("不超过 120 天时逐日成桶", () => {
+    const days = genDays(120);
+    const buckets = bucketDayTotals(days);
+    expect(buckets).toHaveLength(120);
+    expect(buckets[0]).toEqual({ label: "2026-01-01", total: 0, from: "2026-01-01", to: "2026-01-01" });
+  });
+
+  it("121..730 天按 7 天聚合,总和保持一致", () => {
+    const days = genDays(200);
+    const buckets = bucketDayTotals(days);
+    expect(buckets).toHaveLength(Math.ceil(200 / 7));
+    expect(buckets[0].from).toBe("2026-01-01");
+    expect(buckets[0].to).toBe("2026-01-07");
+    expect(buckets[buckets.length - 1].to).toBe("2026-07-19"); // 最后一个不完整周
+    const sumDays = days.reduce((s, d) => s + d.total, 0);
+    const sumBuckets = buckets.reduce((s, b) => s + b.total, 0);
+    expect(sumBuckets).toBe(sumDays);
+  });
+
+  it("超过 730 天按自然月聚合", () => {
+    const days = genDays(800);
+    const buckets = bucketDayTotals(days);
+    const months = new Set(days.map((d) => d.day.slice(0, 7)));
+    expect(buckets).toHaveLength(months.size);
+    expect(buckets[0].label).toBe("2026-01");
+    expect(buckets[0].from).toBe("2026-01-01");
+    expect(buckets[0].to).toBe("2026-01-31");
+    const sumDays = days.reduce((s, d) => s + d.total, 0);
+    const sumBuckets = buckets.reduce((s, b) => s + b.total, 0);
+    expect(sumBuckets).toBe(sumDays);
+  });
+});
+
+describe("computeDayBars", () => {
+  it("空桶或非法尺寸返回空几何", () => {
+    expect(computeDayBars([], 0, 0, 100, 100).bars).toEqual([]);
+    const out = computeDayBars(
+      [{ label: "2026-01-01", total: 30, from: "2026-01-01", to: "2026-01-01" }],
+      0,
+      0,
+      0,
+      100,
+    );
+    expect(out.bars).toEqual([]);
+    expect(out.yMax).toBe(60);
+  });
+
+  it("yMax 向上取整到 60 分钟倍数且最小为 60", () => {
+    const mk = (total: number) => [{ label: "a", total, from: "a", to: "a" }];
+    expect(computeDayBars(mk(0), 0, 0, 100, 100).yMax).toBe(60);
+    expect(computeDayBars(mk(61), 0, 0, 100, 100).yMax).toBe(120);
+    expect(computeDayBars(mk(300), 0, 0, 100, 100).yMax).toBe(300);
+  });
+
+  it("柱体等宽居中步进,高度按比例,零值高度为 0", () => {
+    const buckets = [
+      { label: "1", total: 60, from: "1", to: "1" },
+      { label: "2", total: 30, from: "2", to: "2" },
+      { label: "3", total: 0, from: "3", to: "3" },
+    ];
+    const { bars, yMax } = computeDayBars(buckets, 10, 20, 300, 100);
+    expect(yMax).toBe(60);
+    expect(bars).toHaveLength(3);
+    // 步进 100,柱宽封顶 36,依次在步进内居中
+    expect(bars[0].x).toBeCloseTo(10 + 32);
+    expect(bars[1].x).toBeCloseTo(110 + 32);
+    expect(bars[2].x).toBeCloseTo(210 + 32);
+    expect(bars[0].h).toBeCloseTo(100); // 满值贴顶
+    expect(bars[0].y).toBeCloseTo(20);
+    expect(bars[1].h).toBeCloseTo(50);
+    expect(bars[2].h).toBeCloseTo(0);
+    expect(bars[2].y).toBeCloseTo(120); // 贴基线
+  });
+
+  it("ticks:≤16 根全部标注,更密时抽稀且必含最后一根", () => {
+    const seven = bucketDayTotals(genDays(7));
+    expect(computeDayBars(seven, 0, 0, 600, 100).ticks).toHaveLength(7);
+    const thirty = bucketDayTotals(genDays(30));
+    const dense = computeDayBars(thirty, 0, 0, 600, 100);
+    expect(dense.ticks.length).toBeLessThanOrEqual(8);
+    expect(dense.ticks[dense.ticks.length - 1].index).toBe(29);
+  });
+});
+
+describe("topRoundedBar", () => {
+  it("零高度/零宽度返回空路径", () => {
+    expect(topRoundedBar(0, 0, 10, 0)).toBe("");
+    expect(topRoundedBar(0, 0, 0, 10)).toBe("");
+  });
+
+  it("路径为闭合曲线,圆角不超过柱宽一半", () => {
+    const d = topRoundedBar(10, 20, 8, 60);
+    expect(d.startsWith("M")).toBe(true);
+    expect(d.endsWith("Z")).toBe(true);
+    // 顶部两个圆弧
+    expect(d.match(/A 4 4 0 0 1 /g)?.length).toBe(2);
+    // 底部贴基线:最低点 y = 20 + 60
+    expect(d).toContain("80.00");
+  });
+
+  it("高度不足时圆角按柱高收敛,仍为合法闭合路径", () => {
+    const d = topRoundedBar(0, 98, 10, 2);
+    expect(d.startsWith("M")).toBe(true);
+    expect(d.endsWith("Z")).toBe(true);
+    // r = min(w/2, h, 6) = 2
+    expect(d).toContain("A 2 2 0 0 1 ");
   });
 });

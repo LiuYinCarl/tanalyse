@@ -46,31 +46,35 @@ export interface AppData {
   settings: AppSettings;
 }
 
-/** 默认主题色:浅绿色(与应用图标一致)。统一使用小写十六进制。 */
-export const DEFAULT_ACCENT = "#8fcba8";
+/** 默认主题色:淡蓝色。统一使用小写十六进制。 */
+export const DEFAULT_ACCENT = "#7fb0dc";
 
-/** 莫兰迪色板:分类与主题色的默认候选。 */
+/**
+ * 莫兰迪色板:分类与主题色的默认候选。
+ * 沿色相环每约 30° 取一色、统一压低饱和度、明度略有起伏,
+ * 保证 12 个颜色彼此都拉得开,不会像旧色板那样糊成一片灰。
+ */
 export const MORANDI_PALETTE: string[] = [
-  "#9CAF9F", // 灰绿
-  "#A2B9C7", // 灰蓝
-  "#C8B6A6", // 灰棕
-  "#B8A9C0", // 灰紫
-  "#C7A4A0", // 灰粉
-  "#A8B5A0", // 橄榄灰
-  "#B5B8C4", // 蓝灰
-  "#C4C0A8", // 苔藓黄
-  "#A9BCB2", // 青灰绿
-  "#C2A8B0", // 干玫瑰
-  "#8FB6A8", // 浅青绿
-  "#BFAD9E", // 浅驼
+  "#8fa6c2", // 雾蓝
+  "#8fb8a8", // 青瓷
+  "#9bb88f", // 苔绿
+  "#b0b98c", // 橄榄
+  "#c0b98c", // 芥末
+  "#c2ac8e", // 沙褐
+  "#bf9284", // 陶土
+  "#bc8fa8", // 梅子
+  "#b58fb8", // 藕荷
+  "#a38fc0", // 薰衣草
+  "#8f92c4", // 长春花
+  "#8cb4bc", // 灰青
 ];
 
-/** 主题色候选(浅绿优先,其后为莫兰迪色)。 */
+/** 主题色候选(淡蓝优先,其后为几个冷调莫兰迪色)。 */
 export const ACCENT_CHOICES: string[] = [
   DEFAULT_ACCENT,
-  "#6FBF8E",
-  "#5FA77D",
-  ...MORANDI_PALETTE.slice(0, 6),
+  "#6c9fd0",
+  "#9fc6e8",
+  ...MORANDI_PALETTE.slice(0, 4),
 ];
 
 /**

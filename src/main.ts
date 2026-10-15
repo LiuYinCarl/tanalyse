@@ -7,6 +7,7 @@ import { createGridView } from "./ui/grid.ts";
 import { createHeatmap } from "./ui/heatmap.ts";
 import { createStatsView } from "./ui/stats.ts";
 import { createSettingsView } from "./ui/settings.ts";
+import { applyPlatformClass } from "./ui/platform.ts";
 import { AppStore } from "./state.ts";
 import { invoke, setWindowTheme } from "./bridge.ts";
 import { hexMix } from "./logic/color.ts";
@@ -34,14 +35,15 @@ function applyTheme(store: AppStore): void {
   rootEl.dataset.theme = theme;
   const accent = store.data.settings.accentColor;
   rootEl.style.setProperty("--accent", accent);
-  rootEl.style.setProperty("--accent-soft", hexMix(accent, theme === "dark" ? "#141816" : "#f6f8f7", 0.72));
   rootEl.style.setProperty("--accent-deep", hexMix(accent, "#1b2420", theme === "dark" ? 0.34 : 0.45));
-  rootEl.style.setProperty("--heat-empty", theme === "dark" ? "#ffffff12" : "#00000010");
+  rootEl.style.setProperty("--heat-empty", theme === "dark" ? "#ffffff16" : "#00000016");
   // 原生 vibrancy/Acrylic 不会自己跟随应用主题,必须显式同步窗口外观
   void setWindowTheme(theme);
 }
 
 async function main(): Promise<void> {
+  // 先标注平台:标题栏布局与控制钮样式依赖它
+  applyPlatformClass();
   const app = document.getElementById("app")!;
 
   const store = new AppStore({
@@ -115,23 +117,40 @@ async function main(): Promise<void> {
     renderTabs();
     renderActive();
   });
+  store.on("error", renderNotice);
   store.on("view", () => {
     if (activeTab === "grid") gridView.render();
   });
 
+  /** 顶部提示条:错误 > 只读 > 自动修复,优先级高的先显示。 */
+  function renderNotice(): void {
+    let message = store.errorMessage ?? "";
+    if (!message && store.readonlyMode) message = t("notice.readonly");
+    if (!message && store.loadResult.repairs.length) {
+      message = t("notice.repaired", { msg: store.loadResult.repairs.join("; ") });
+    }
+    notice.textContent = message;
+    notice.hidden = message === "";
+  }
+
   renderTabs();
   switchTab("grid");
 
-  await store.init();
-  applyTheme(store);
-  let message = store.loadResult.repairs.length
-    ? t("notice.repaired", { msg: store.loadResult.repairs.join("; ") })
-    : "";
-  if (store.readonlyMode) {
-    message = t("notice.readonly");
+  try {
+    await store.init();
+  } catch {
+    // 兜底:init 内部已处理加载失败;这里避免未捕获的 rejection 让启动卡住
   }
-  notice.textContent = message;
-  notice.hidden = message === "";
+  // 已有实例在写同一份数据(后端拿不到单实例锁)→ 本窗口只读
+  try {
+    if (await invoke<boolean>("is_secondary_instance")) {
+      store.forceReadonly(t("notice.secondaryInstance"));
+    }
+  } catch {
+    // 旧版本后端没有该命令:忽略
+  }
+  applyTheme(store);
+  renderNotice();
   // 版本号写入页面,方便用户反馈问题;暴露 store 便于调试与端到端测试
   document.title = `tanalyse v${APP_VERSION}`;
   (window as unknown as Record<string, unknown>).__tanalyse = { store };

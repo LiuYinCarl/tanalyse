@@ -4,15 +4,24 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+/// 保存冲突:磁盘上的数据文件已被外部程序改动,拒绝覆盖。
+/// 前端按这个标识给出专门的本地化提示(见 bridge.ts 的 ERR_SAVE_CONFLICT)。
+pub const SAVE_CONFLICT: &str = "stale-file";
+
 /// 全局状态:已解析的数据文件路径。
 pub struct AppState {
-    pub data_file: Mutex<Option<PathBuf>>,
+    pub data_file: Mutex<PathBuf>,
+    /// 已有实例在写同一份数据 → 本次以只读启动,避免互相覆盖。
+    pub force_readonly: bool,
+    /// 最近一次读/写数据文件时记录的内容哈希;用于发现外部修改。
+    pub observed_hash: Mutex<Option<u64>>,
 }
 
 /// 注册全部命令(在 run() 中传给 Builder)。
 pub fn invoke_handler() -> impl Fn(tauri::ipc::Invoke<tauri::Wry>) -> bool + Send + Sync + 'static {
     tauri::generate_handler![
         app_version,
+        is_secondary_instance,
         set_window_theme,
         get_data_path,
         load_data,
@@ -46,17 +55,22 @@ fn set_window_theme<R: tauri::Runtime>(
 }
 
 fn data_file_of(state: &tauri::State<'_, AppState>) -> Result<PathBuf, String> {
-    state
+    Ok(state
         .data_file
         .lock()
         .map_err(|_| "状态锁损坏".to_string())?
-        .clone()
-        .ok_or_else(|| "数据文件未初始化".to_string())
+        .clone())
 }
 
 #[tauri::command]
 fn app_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
+}
+
+/// 是否因"已有实例在运行"而以只读模式启动。
+#[tauri::command]
+fn is_secondary_instance(state: tauri::State<'_, AppState>) -> bool {
+    state.force_readonly
 }
 
 #[tauri::command]
@@ -66,12 +80,35 @@ fn get_data_path(state: tauri::State<'_, AppState>) -> Result<String, String> {
 
 #[tauri::command]
 fn load_data(state: tauri::State<'_, AppState>) -> Result<Option<String>, String> {
-    super::data_io::load_json(&data_file_of(&state)?)
+    let path = data_file_of(&state)?;
+    let content = super::data_io::load_json(&path)?;
+    // 记下磁盘内容的指纹,保存前据此判断是否被外部改动
+    let hash = content.as_deref().map(super::data_io::content_hash);
+    *state
+        .observed_hash
+        .lock()
+        .map_err(|_| "状态锁损坏".to_string())? = hash;
+    Ok(content)
 }
 
 #[tauri::command]
 fn save_data(state: tauri::State<'_, AppState>, json: String) -> Result<(), String> {
-    super::data_io::save_json(&data_file_of(&state)?, &json)
+    let path = data_file_of(&state)?;
+    // 保存前比对:磁盘内容若与上次读到的不一致,说明被别的程序改过,拒绝覆盖。
+    // 单实例锁挡的是"另一个 tanalyse",这里额外挡住手改 JSON、网盘同步等外部写入。
+    let observed = *state
+        .observed_hash
+        .lock()
+        .map_err(|_| "状态锁损坏".to_string())?;
+    if super::data_io::disk_hash(&path) != observed {
+        return Err(SAVE_CONFLICT.to_string());
+    }
+    super::data_io::save_json(&path, &json)?;
+    *state
+        .observed_hash
+        .lock()
+        .map_err(|_| "状态锁损坏".to_string())? = Some(super::data_io::content_hash(&json));
+    Ok(())
 }
 
 #[tauri::command]
@@ -133,10 +170,13 @@ mod tests {
         let dir = tempfile::tempdir().expect("tempdir");
         let data_file = dir.path().join(DATA_FILE);
         app.manage(AppState {
-            data_file: Mutex::new(Some(data_file)),
+            data_file: Mutex::new(data_file),
+            force_readonly: false,
+            observed_hash: Mutex::new(None),
         });
         let state = app.state::<AppState>();
 
+        assert!(!is_secondary_instance(state.clone()));
         assert!(get_data_path(state.clone())
             .unwrap()
             .ends_with("tanalyse-data.json"));
@@ -148,15 +188,6 @@ mod tests {
             r#"{"version":"1.0.0"}"#
         );
         assert!(save_data(state.clone(), "{broken".to_string()).is_err());
-
-        // 未初始化状态应报错(manage 不会替换已有状态,用全新 app)
-        let fresh = mock_app();
-        fresh.manage(AppState {
-            data_file: Mutex::new(None),
-        });
-        let empty = fresh.state::<AppState>();
-        assert!(get_data_path(empty.clone()).is_err());
-        assert!(load_data(empty).is_err());
     }
 
     #[test]
@@ -173,5 +204,47 @@ mod tests {
             r#"{"version":"1.0.0"}"#
         );
         assert!(import_data_from(dir.path().join("nope.json").display().to_string()).is_err());
+    }
+
+    #[test]
+    fn secondary_instance_flag_reported() {
+        let app = mock_app();
+        app.manage(AppState {
+            data_file: Mutex::new(std::path::PathBuf::from("tanalyse-data.json")),
+            force_readonly: true,
+            observed_hash: Mutex::new(None),
+        });
+        assert!(is_secondary_instance(app.state::<AppState>()));
+    }
+
+    #[test]
+    fn save_rejected_when_file_changed_externally() {
+        let app = mock_app();
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join(DATA_FILE);
+        app.manage(AppState {
+            data_file: Mutex::new(path.clone()),
+            force_readonly: false,
+            observed_hash: Mutex::new(None),
+        });
+        let state = app.state::<AppState>();
+
+        // 启动时文件还不存在 → 记录到 None 指纹
+        assert!(matches!(load_data(state.clone()), Ok(None)));
+        // 外部程序创建了文件
+        std::fs::write(&path, r#"{"version":"1.0.0","external":true}"#).unwrap();
+
+        let err = save_data(state.clone(), r#"{"version":"1.0.0"}"#.to_string()).unwrap_err();
+        assert_eq!(err, SAVE_CONFLICT);
+        // 关键:磁盘内容没有被覆盖
+        assert!(std::fs::read_to_string(&path).unwrap().contains("external"));
+
+        // 重新加载承认外部版本后,又能正常保存
+        load_data(state.clone()).unwrap();
+        save_data(
+            state.clone(),
+            r#"{"version":"1.0.0","external":true}"#.to_string(),
+        )
+        .unwrap();
     }
 }

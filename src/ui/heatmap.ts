@@ -5,12 +5,13 @@ import { AppStore } from "../state.ts";
 import { heatmapData } from "../logic/model.ts";
 import { addDays, startOfWeek, todayKey } from "../logic/time.ts";
 import { heatShades } from "../logic/color.ts";
-import { formatMinutes, monthLabel, t, weekdayShort } from "../logic/i18n.ts";
+import { formatMinutes, monthLabel, t, weekdayRowLabel } from "../logic/i18n.ts";
 import { EV } from "./events.ts";
 
 const WEEKS = 52;
 const GAP = 3;
-const LABEL_W = 22;
+/** 「周三」两个汉字 + 余量;英文 Mon/Wed/Fri 也放得下。 */
+const LABEL_W = 28;
 const RIGHT_PAD = 4;
 const TOP = 16;
 /** 格子边长上下限:太小看不清,太大就不像"格子"了。 */
@@ -38,19 +39,15 @@ function layoutFor(width: number, height: number): { cell: number; gap: number }
   let cell = Math.floor(Math.min(byWidth, byHeight) * 2) / 2;
   cell = Math.max(MIN_CELL, Math.min(MAX_CELL, cell || MIN_CELL));
   // 余量摊进间隙:总宽严格等于可用宽度,右侧不留空
-  const gap = WEEKS > 1 ? Math.max(1.5, Math.min(6, (gridW - WEEKS * cell) / (WEEKS - 1))) : GAP;
+  const gap = WEEKS > 1 ? Math.max(1.5, Math.min(7, (gridW - WEEKS * cell) / (WEEKS - 1))) : GAP;
   return { cell, gap };
 }
 
 export function createHeatmap(store: AppStore): HeatmapView {
   const root = h("div", { class: "heatmap" });
   const legend = h("div", { class: "heatmap-legend" });
-  const head = h(
-    "div",
-    { class: "heatmap-head" },
-    h("span", { class: "heatmap-title" }, t("heatmap.weeks", { n: WEEKS })),
-    legend,
-  );
+  const titleEl = h("span", { class: "heatmap-title" });
+  const head = h("div", { class: "heatmap-head" }, titleEl, legend);
   const box = h("div", { class: "heatmap-scroll" });
   root.append(head, box);
 
@@ -74,6 +71,8 @@ export function createHeatmap(store: AppStore): HeatmapView {
   }
 
   function render(): void {
+    // 标题不重建节点,但文本要跟随当前语言
+    titleEl.textContent = t("heatmap.title");
     clear(box);
     const inputs = layoutInputs();
     const { cell, gap } = layoutFor(inputs.width, inputs.height);
@@ -102,7 +101,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
       "aria-label": t("heatmap.aria", { n: WEEKS }),
     });
 
-    // 星期标签(一 / 三 / 五)
+    // 星期标签(周一 / 周三 / 周五)
     for (let d = 0; d < 7; d++) {
       const dow = (weekStartPref + d) % 7;
       if (dow !== 1 && dow !== 3 && dow !== 5) continue;
@@ -110,7 +109,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
         svg(
           "text",
           { x: 0, y: TOP + d * (cell + gap) + cell - 2, class: "hm-text" },
-          weekdayShort(dow),
+          weekdayRowLabel(dow),
         ),
       );
     }
@@ -146,7 +145,7 @@ export function createHeatmap(store: AppStore): HeatmapView {
           y,
           width: cell,
           height: cell,
-          rx: Math.min(3.5, cell / 4),
+          rx: Math.min(5, cell * 0.3),
           class: `hm-cell${future ? " hm-future" : ""}${c.day === today ? " hm-today" : ""}`,
           fill: future ? "transparent" : shades[c.level],
           "data-day": c.day,

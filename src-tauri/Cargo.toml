@@ -4,7 +4,8 @@ version = "1.1.0"
 description = "tanalyse · 极简时间块记录"
 authors = ["kenshin"]
 edition = "2021"
-rust-version = "1.77"
+# 单实例守卫用到 std 的 File::try_lock(1.89 稳定),故 MSRV 提到 1.89
+rust-version = "1.89"
 
 [lib]
 name = "tanalyse_lib"

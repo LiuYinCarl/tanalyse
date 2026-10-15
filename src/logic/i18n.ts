@@ -23,7 +23,7 @@ const zh = {
   "grid.addCategory": "+ 分类",
   "grid.manageCategories": "管理分类",
 
-  "heatmap.weeks": "近 {n} 周",
+  "heatmap.title": "年度活动",
   "heatmap.less": "少",
   "heatmap.more": "多",
   "heatmap.aria": "近 {n} 周时间记录热力图",
@@ -42,10 +42,15 @@ const zh = {
   "stats.total": "累计记录",
   "stats.activeDays": "有记录天数",
   "stats.daily": "日均",
+  "stats.minShort": "{n}分",
+  "stats.hourShort": "{n}时",
   "stats.pieTitle": "分类占比",
   "stats.lineTitle": "随时间变化",
   "stats.empty": "该时间段还没有记录",
   "stats.unknown": "未知",
+  "stats.pieAria": "分类时间占比饼图",
+  "stats.lineAria": "各分类每日分钟数折线图",
+  "stats.barsAria": "每日记录时长柱状图",
 
   "settings.appearance": "外观",
   "settings.theme": "主题",
@@ -53,6 +58,7 @@ const zh = {
   "settings.themeLight": "浅色",
   "settings.themeDark": "深色",
   "settings.accent": "主题色",
+  "settings.accentAria": "主题色 {color}",
   "settings.language": "语言",
   "settings.categories": "分类管理",
   "settings.categoriesDesc":
@@ -72,15 +78,24 @@ const zh = {
   "settings.share": "导出 / 分享",
   "settings.exportJson": "导出 JSON…",
   "settings.importJson": "导入 JSON…",
+  "settings.importNewer":
+    "该文件由更新版本的 tanalyse 创建,当前版本只能只读查看,无法导入。",
   "settings.versionLine": "应用 v{app} · 数据格式 v{schema}",
 
   "titlebar.close": "关闭",
   "titlebar.minimize": "最小化",
-  "titlebar.maximize": "最大化/还原",
+  "titlebar.maximize": "最大化",
+  "titlebar.restore": "还原",
 
   "notice.repaired": "数据已自动修复:{msg}",
   "notice.readonly":
     "此数据文件由更新版本的 tanalyse 创建,当前版本以只读模式运行,修改不会被保存。",
+  "notice.secondaryInstance":
+    "检测到另一个 tanalyse 正在运行。为避免两个窗口互相覆盖数据,本窗口以只读模式打开,修改不会被保存。",
+  "error.loadFailed": "读取数据失败:{msg}。为避免覆盖原文件,已进入只读模式。",
+  "error.saveFailed": "保存失败:{msg}。改动暂存在内存,请检查数据目录是否可写。",
+  "error.saveConflict":
+    "数据文件已被其它程序修改,为避免覆盖对方内容,本次保存已取消。可先在「设置 → 导出 JSON」备份,再重启应用读取磁盘上的版本。",
   "state.imported": "已导入新数据",
 
   "repair.jsonParse": "JSON 解析失败,已创建新数据",
@@ -140,7 +155,7 @@ const en: Record<MsgKey, string> = {
   "grid.addCategory": "+ Category",
   "grid.manageCategories": "Manage categories",
 
-  "heatmap.weeks": "Last {n} weeks",
+  "heatmap.title": "Annual activity",
   "heatmap.less": "Less",
   "heatmap.more": "More",
   "heatmap.aria": "Time recorded over the last {n} weeks",
@@ -159,10 +174,15 @@ const en: Record<MsgKey, string> = {
   "stats.total": "Total recorded",
   "stats.activeDays": "Days with records",
   "stats.daily": "Daily average",
+  "stats.minShort": "{n}m",
+  "stats.hourShort": "{n}h",
   "stats.pieTitle": "Share by category",
   "stats.lineTitle": "Time over days",
   "stats.empty": "No records in this period",
   "stats.unknown": "Unknown",
+  "stats.pieAria": "Time share by category (donut chart)",
+  "stats.lineAria": "Daily minutes by category (line chart)",
+  "stats.barsAria": "Minutes recorded per day (bar chart)",
 
   "settings.appearance": "Appearance",
   "settings.theme": "Theme",
@@ -170,6 +190,7 @@ const en: Record<MsgKey, string> = {
   "settings.themeLight": "Light",
   "settings.themeDark": "Dark",
   "settings.accent": "Accent color",
+  "settings.accentAria": "Accent color {color}",
   "settings.language": "Language",
   "settings.categories": "Categories",
   "settings.categoriesDesc":
@@ -189,15 +210,26 @@ const en: Record<MsgKey, string> = {
   "settings.share": "Export / Share",
   "settings.exportJson": "Export JSON…",
   "settings.importJson": "Import JSON…",
+  "settings.importNewer":
+    "This file was created by a newer version of tanalyse and can only be read, not imported.",
   "settings.versionLine": "App v{app} · Data schema v{schema}",
 
   "titlebar.close": "Close",
   "titlebar.minimize": "Minimize",
-  "titlebar.maximize": "Maximize/Restore",
+  "titlebar.maximize": "Maximize",
+  "titlebar.restore": "Restore",
 
   "notice.repaired": "Data auto-repaired: {msg}",
   "notice.readonly":
     "This data file was created by a newer version of tanalyse. It runs in read-only mode; changes will not be saved.",
+  "notice.secondaryInstance":
+    "Another tanalyse instance is already running. To avoid the two windows overwriting each other, this window opened read-only; changes will not be saved.",
+  "error.loadFailed":
+    "Failed to load data: {msg}. Switched to read-only to avoid overwriting the existing file.",
+  "error.saveFailed":
+    "Failed to save: {msg}. Your changes are kept in memory; check that the data folder is writable.",
+  "error.saveConflict":
+    "The data file was modified by another program, so this save was cancelled to avoid overwriting it. Export your data from Settings → Export JSON, then restart to load the on-disk version.",
   "state.imported": "Imported new data",
 
   "repair.jsonParse": "JSON failed to parse; started fresh",
@@ -299,6 +331,12 @@ export function formatDayLabel(key: string): string {
 /** 星期短名(dow:0=周日)与月份短名(month:0..11),供热力图使用。 */
 export function weekdayShort(dow: number): string {
   return t(`weekday.${dow}` as MsgKey);
+}
+
+/** 热力图行标签:中文带「周」前缀(周一),英文用三字母(Mon)。 */
+export function weekdayRowLabel(dow: number): string {
+  const short = weekdayShort(dow);
+  return current === "zh" ? `周${short}` : short;
 }
 
 export function monthLabel(month: number): string {

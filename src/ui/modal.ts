@@ -3,7 +3,7 @@
 import { h } from "./dom.ts";
 import { AppStore } from "../state.ts";
 import { SUB_SLOTS } from "../logic/schema.ts";
-import { getSlotStates, setSubSlot, setSlot } from "../logic/model.ts";
+import { getSlotStates } from "../logic/model.ts";
 import { minutesToLabel } from "../logic/time.ts";
 import { t } from "../logic/i18n.ts";
 
@@ -14,7 +14,7 @@ export interface ModalHandle {
 /**
  * 打开细分弹窗:把一个 30 分钟格子切成 3 个 10 分钟小格。
  * 点击小格 = 以当前选中分类标记/清除;弹窗内可临时切换目标分类。
- * 直接改动 store 数据并 notifyDataChanged,格子视图经事件自动刷新。
+ * 写入统一走 store 方法,格子视图经 store 的 data 事件自动刷新。
  */
 export function openSlotModal(
   store: AppStore,
@@ -77,10 +77,9 @@ export function openSlotModal(
             style: catId ? `--seg-color: ${cat?.color ?? "var(--accent)"}` : "",
             title: cat ? cat.name : t("modal.unrecorded"),
             onclick: () => {
-              if (store.readonlyMode || !activeCategory) return;
+              if (!activeCategory) return;
               const next = catId === activeCategory ? null : activeCategory;
-              setSubSlot(store.data, dayKey, slot, sub, next);
-              store.notifyDataChanged();
+              store.setSubSlot(dayKey, slot, sub, next);
               renderSegments();
             },
           },
@@ -96,9 +95,7 @@ export function openSlotModal(
     {
       class: "btn btn-ghost",
       onclick: () => {
-        if (store.readonlyMode) return;
-        setSlot(store.data, dayKey, slot, null);
-        store.notifyDataChanged();
+        store.setSlot(dayKey, slot, null);
         renderSegments();
       },
     },

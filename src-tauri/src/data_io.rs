@@ -1,6 +1,8 @@
 //! 数据文件 IO:可移植路径解析、原子保存、备份轮换、导入导出。
 //! 纯逻辑与 IO 分离,便于单元测试与模糊测试(`parse_and_validate`)。
 
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 use std::path::{Path, PathBuf};
 
 /// 数据文件名。可移植模式下与可执行文件放在同一目录。
@@ -48,6 +50,19 @@ pub fn load_json(path: &Path) -> Result<Option<String>, String> {
         Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
         Err(e) => Err(format!("读取失败: {e}")),
     }
+}
+
+/// 内容哈希指纹:用于发现数据文件被别的程序改过。
+/// 只在单次运行内做前后比较,不要求跨版本/跨机器稳定。
+pub fn content_hash(text: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    text.hash(&mut hasher);
+    hasher.finish()
+}
+
+/// 磁盘上数据文件内容的哈希;文件不存在或读不出来返回 None。
+pub fn disk_hash(path: &Path) -> Option<u64> {
+    std::fs::read_to_string(path).ok().map(|s| content_hash(&s))
 }
 
 /// 原子保存:先写临时文件,再把旧文件拷贝为 .bak,最后用一次 rename 原子替换。
@@ -126,6 +141,26 @@ mod tests {
         assert!(matches!(load_json(&path), Ok(None)));
         save_json(&path, r#"{"version":"1.0.0"}"#).unwrap();
         assert_eq!(load_json(&path).unwrap().unwrap(), r#"{"version":"1.0.0"}"#);
+    }
+
+    #[test]
+    fn content_hash_tracks_content_not_identity() {
+        assert_eq!(content_hash("abc"), content_hash("abc"));
+        assert_ne!(content_hash("abc"), content_hash("abd"));
+        // 同样大小、只差一个字符,也要能分辨(用于发现外部改动)
+        assert_ne!(content_hash("aaaaaaaa"), content_hash("aaaaaaab"));
+    }
+
+    #[test]
+    fn disk_hash_none_for_missing_some_for_file() {
+        let dir = tempdir();
+        let path = dir.path().join(DATA_FILE_NAME);
+        assert_eq!(disk_hash(&path), None);
+        save_json(&path, r#"{"version":"1.0.0"}"#).unwrap();
+        assert_eq!(
+            disk_hash(&path),
+            Some(content_hash(r#"{"version":"1.0.0"}"#))
+        );
     }
 
     #[test]

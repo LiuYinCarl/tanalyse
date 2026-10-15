@@ -59,7 +59,7 @@ describe("loadData", () => {
     expect(r.data.entries["2026-09-21"][1]).toBe("work");
     expect(r.data.entries["2026-09-21"]).toHaveLength(POSITIONS_PER_DAY);
     expect(r.data.settings.theme).toBe("system");
-    expect(r.data.settings.accentColor).toBe("#8fcba8");  });
+    expect(r.data.settings.accentColor).toBe("#7fb0dc");  });
 
   it("来自未来主版本的数据只读", () => {
     const raw = { version: "2.0.0", entries: {} };

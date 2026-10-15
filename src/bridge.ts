@@ -5,15 +5,28 @@
 
 import { APP_VERSION } from "./logic/schema.ts";
 
-type Cmd =
-  | "get_data_path"
-  | "set_window_theme"
-  | "load_data"
-  | "save_data"
-  | "export_data_to"
-  | "import_data_from"
-  | "reveal_data_dir"
-  | "app_version";
+/**
+ * 与 Rust `commands.rs` 的 `invoke_handler!` 一一对应的命令清单。
+ * 单一来源:`Cmd` 类型从这里派生,并有测试比对 Rust 侧,避免两份清单漂移。
+ */
+export const COMMANDS = [
+  "app_version",
+  "is_secondary_instance",
+  "set_window_theme",
+  "get_data_path",
+  "load_data",
+  "save_data",
+  "export_data_to",
+  "import_data_from",
+] as const;
+
+export type Cmd = (typeof COMMANDS)[number];
+
+/**
+ * 后端"数据文件被外部改动、拒绝覆盖"的错误标识。
+ * 与 Rust commands.rs 的 `SAVE_CONFLICT` 保持一致;有测试断言两边相同。
+ */
+export const ERR_SAVE_CONFLICT = "stale-file";
 
 const LS_KEY = "tanalyse-data";
 
@@ -38,10 +51,11 @@ function browserFallback<T>(cmd: Cmd, args?: Record<string, unknown>): Promise<T
       return Promise.resolve(null as T);
     case "import_data_from":
       return Promise.resolve((localStorage.getItem(LS_KEY) ?? "{}") as T);
-    case "reveal_data_dir":
-      return Promise.resolve(null as T);
     case "app_version":
       return Promise.resolve(APP_VERSION as T);
+    case "is_secondary_instance":
+      // 浏览器预览没有第二实例的概念
+      return Promise.resolve(false as T);
     case "set_window_theme":
       // 浏览器没有原生窗口层,主题只由 CSS 变量承担
       return Promise.resolve(null as T);

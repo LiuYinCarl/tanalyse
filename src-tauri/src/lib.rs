@@ -2,33 +2,35 @@
 
 pub mod commands;
 pub mod data_io;
+pub mod single_instance;
+
+/// 窗口圆角(逻辑像素)。前端 CSS 的 `--window-radius` 必须与此一致:
+/// macOS 的 vibrancy 圆角与页面内容都对同一个值取整,不一致会错位。
+/// `css_matches_window_radius` 测试会读 style.css 断言两者相等。
+pub const WINDOW_RADIUS: f64 = 22.0;
 
 /// 按平台应用原生磨砂玻璃效果。
-/// 圆角与前端 --window-radius 保持一致,窗口四角由 vibrancy 与内容同时裁圆。
+/// macOS 圆角与前端 --window-radius 保持一致,四角由 vibrancy 与内容同时裁圆。
 #[cfg(not(fuzzing))]
 fn apply_window_effects(window: &tauri::WebviewWindow) {
-    // 只有 macOS/Windows 分支用到;Linux 下这条 import 会被 -D warnings 判成未使用
-    #[cfg(any(target_os = "macos", target_os = "windows"))]
-    use tauri::utils::config::WindowEffectsConfig;
     #[cfg(target_os = "macos")]
     {
+        use tauri::utils::config::WindowEffectsConfig;
         use tauri::utils::{WindowEffect, WindowEffectState};
         let _ = window.set_effects(WindowEffectsConfig {
             effects: vec![WindowEffect::UnderWindowBackground],
             state: Some(WindowEffectState::Active),
-            radius: Some(22.0),
+            radius: Some(WINDOW_RADIUS),
             color: None,
         });
     }
     #[cfg(target_os = "windows")]
     {
-        use tauri::utils::{WindowEffect, WindowEffectState};
-        let _ = window.set_effects(WindowEffectsConfig {
-            effects: vec![WindowEffect::Acrylic],
-            state: Some(WindowEffectState::Active),
-            radius: Some(22.0),
-            color: None,
-        });
+        // Windows 的原生 Acrylic 是铺满矩形窗口的:无边框透明窗口里,它会在
+        // CSS 圆角之外露出一圈方形毛玻璃;无边框窗口默认的 1px 白边/阴影同样
+        // 是方的。两样都关掉,圆角改由"透明窗口 + CSS 圆角 + 半透明底色"给出,
+        // 各 Windows 版本观感一致,也不再有方形外框。
+        let _ = window.set_shadow(false);
     }
     #[cfg(target_os = "linux")]
     {
@@ -67,12 +69,47 @@ pub fn run() {
             if let Some(dir) = data_file.parent() {
                 std::fs::create_dir_all(dir).map_err(|e| format!("创建数据目录失败: {e}"))?;
             }
+            // 单实例守卫:同一份数据只允许一个可写实例。两个实例各自把整份数据
+            // 读进内存再整体写回,后写者会覆盖先写者;拿不到锁的一方以只读启动。
+            let secondary = match single_instance::try_acquire(&data_file) {
+                Ok(Some(lock)) => {
+                    app.manage(lock); // 持有到进程结束,锁才持续有效
+                    false
+                }
+                Ok(None) => true,
+                Err(_) => false, // 锁文件建不出(目录只读等):不阻塞启动,写失败会在保存时报出
+            };
             app.manage(commands::AppState {
-                data_file: Mutex::new(Some(data_file)),
+                data_file: Mutex::new(data_file),
+                force_readonly: secondary,
+                observed_hash: Mutex::new(None),
             });
             Ok(())
         })
         .invoke_handler(commands::invoke_handler())
         .run(tauri::generate_context!())
         .expect("tanalyse 启动失败");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::WINDOW_RADIUS;
+
+    /// 窗口圆角在前端 CSS 与后端各写一份,这里断言两者没有漂移。
+    #[test]
+    fn css_matches_window_radius() {
+        let css = std::fs::read_to_string(concat!(env!("CARGO_MANIFEST_DIR"), "/../src/style.css"))
+            .expect("读取 src/style.css");
+        let after = css
+            .split("--window-radius:")
+            .nth(1)
+            .expect("style.css 缺少 --window-radius");
+        let number: String = after
+            .chars()
+            .skip_while(|c| !c.is_ascii_digit() && *c != '.')
+            .take_while(|c| c.is_ascii_digit() || *c == '.')
+            .collect();
+        let css_radius: f64 = number.parse().expect("解析 --window-radius 失败");
+        assert_eq!(css_radius, WINDOW_RADIUS);
+    }
 }

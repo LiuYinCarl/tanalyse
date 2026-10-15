@@ -29,9 +29,9 @@ describe("t() 取词与插值", () => {
   });
 
   it("参数插值", () => {
-    expect(t("heatmap.weeks", { n: 26 })).toBe("近 26 周");
+    expect(t("heatmap.aria", { n: 26 })).toBe("近 26 周时间记录热力图");
     setLocale("en");
-    expect(t("heatmap.weeks", { n: 26 })).toBe("Last 26 weeks");
+    expect(t("heatmap.aria", { n: 26 })).toBe("Time recorded over the last 26 weeks");
     expect(t("repair.entriesDropped", { n: 3 })).toBe("entries: dropped 3 invalid days");
   });
 

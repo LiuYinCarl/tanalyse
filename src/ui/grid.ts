@@ -4,7 +4,7 @@ import { h, clear } from "./dom.ts";
 import { openSlotModal } from "./modal.ts";
 import { AppStore } from "../state.ts";
 import { SLOTS_PER_DAY } from "../logic/schema.ts";
-import { getDay, setSlot, toggleSlot, slotTooltip } from "../logic/model.ts";
+import { getDay, slotTooltip } from "../logic/model.ts";
 import type { Day } from "../logic/model.ts";
 import { addDays, todayKey } from "../logic/time.ts";
 import { formatDayLabel, t } from "../logic/i18n.ts";
@@ -45,6 +45,7 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
 
   // ---- 日格子:两行(0-11 点 / 12-23 点),各自带小时标签 ----
   const gridEl = h("div", { class: "day-grid" });
+  const hintEl = h("div", { class: "hint" }, t("grid.hint"));
   // 与热力图同样的玻璃卡片,让"日格子"成为一块完整的记录面板
   const dayBoard = h("div", { class: "day-board glass" }, gridEl);
 
@@ -54,7 +55,7 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
       "div",
       { class: "row-between" },
       dateNav,
-      h("div", { class: "hint" }, t("grid.hint")),
+      hintEl,
     ),
     heatmapBox,
     dayBoard,
@@ -98,6 +99,10 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
 
   function renderDateNav(): void {
     dateLabel.replaceChildren(formatDayLabel(store.viewDay));
+    // 静态文案同样跟随语言刷新
+    todayBtn.textContent = t("grid.today");
+    todayBtn.title = t("grid.today");
+    hintEl.replaceChildren(t("grid.hint"));
   }
 
   /** 小格取色:未填返回 null(交给空档底色),分类缺失时回退主题色。 */
@@ -153,10 +158,8 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
       if (clickTimer !== null) return;
       clickTimer = setTimeout(() => {
         clickTimer = null;
-        if (store.readonlyMode || !store.selectedCategoryId) return;
-        if (toggleSlot(store.data, store.viewDay, slot, store.selectedCategoryId)) {
-          store.notifyDataChanged();
-        }
+        // 只读与持久化都由 store 统一处理,视图只管发起意图
+        if (store.selectedCategoryId) store.toggleSlot(store.viewDay, slot, store.selectedCategoryId);
       }, CLICK_DELAY_MS);
     });
     cell.addEventListener("dblclick", () => {
@@ -168,10 +171,7 @@ export function createGridView(store: AppStore, heatmapSlot: HTMLElement): GridV
     });
     cell.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      if (store.readonlyMode) return;
-      if (setSlot(store.data, store.viewDay, slot, null)) {
-        store.notifyDataChanged();
-      }
+      store.setSlot(store.viewDay, slot, null);
     });
     return cell;
   }

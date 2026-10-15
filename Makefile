@@ -59,7 +59,7 @@ coverage: ## 覆盖率报告,门槛 90%(前端 HTML 在 coverage/,Rust 排除启
 fuzz: ## Rust 模糊测试 $(FUZZ_SECONDS) 秒(依赖 nightly + cargo-fuzz)
 	cargo +nightly fuzz run parse_data --fuzz-dir fuzz -- -max_total_time=$(FUZZ_SECONDS)
 
-icon: ## 重新生成图标(浅绿渐变 + 提交格子母题)
+icon: ## 重新生成图标(淡蓝底 + 提交格子母题)
 	python3 scripts/gen_icon.py $(SRC_DIR)/icons/icon-source.png
 	npx tauri icon $(SRC_DIR)/icons/icon-source.png
 
