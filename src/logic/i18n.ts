@@ -68,6 +68,8 @@ const zh = {
   "settings.delete": "删除",
   "settings.general": "通用",
   "settings.autoStart": "开机自启",
+  "settings.remindRecord": "未记录提醒",
+  "settings.remindRecordHint": "工作时段每 2 小时检查,当天还没有记录时弹系统通知",
   "settings.weekStart": "一周起始",
   "settings.monday": "周一",
   "settings.sunday": "周日",
@@ -86,6 +88,9 @@ const zh = {
   "titlebar.minimize": "最小化",
   "titlebar.maximize": "最大化",
   "titlebar.restore": "还原",
+
+  "remind.recordTitle": "该记录一下时间了",
+  "remind.recordBody": "今天还没有任何记录,打开 tanalyse 把格子补一补吧。",
 
   "notice.repaired": "数据已自动修复:{msg}",
   "notice.readonly":
@@ -200,6 +205,9 @@ const en: Record<MsgKey, string> = {
   "settings.delete": "Delete",
   "settings.general": "General",
   "settings.autoStart": "Launch at login",
+  "settings.remindRecord": "Record reminder",
+  "settings.remindRecordHint":
+    "During work hours, checks every 2 hours and sends a system notification when today has no records",
   "settings.weekStart": "Week starts on",
   "settings.monday": "Mon",
   "settings.sunday": "Sun",
@@ -218,6 +226,9 @@ const en: Record<MsgKey, string> = {
   "titlebar.minimize": "Minimize",
   "titlebar.maximize": "Maximize",
   "titlebar.restore": "Restore",
+
+  "remind.recordTitle": "Time to record",
+  "remind.recordBody": "Nothing recorded today yet. Open tanalyse and fill in your grid.",
 
   "notice.repaired": "Data auto-repaired: {msg}",
   "notice.readonly":

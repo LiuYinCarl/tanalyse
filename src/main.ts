@@ -7,11 +7,12 @@ import { createGridView } from "./ui/grid.ts";
 import { createHeatmap } from "./ui/heatmap.ts";
 import { createStatsView } from "./ui/stats.ts";
 import { createSettingsView } from "./ui/settings.ts";
-import { applyPlatformClass } from "./ui/platform.ts";
 import { AppStore } from "./state.ts";
+import { createRecordReminder } from "./reminder.ts";
 import { invoke, setWindowTheme } from "./bridge.ts";
 import { hexMix } from "./logic/color.ts";
 import { APP_VERSION } from "./logic/schema.ts";
+import { todayKey } from "./logic/time.ts";
 import { EV } from "./ui/events.ts";
 import { setLocale, t } from "./logic/i18n.ts";
 import type { MsgKey } from "./logic/i18n.ts";
@@ -42,8 +43,6 @@ function applyTheme(store: AppStore): void {
 }
 
 async function main(): Promise<void> {
-  // 先标注平台:标题栏布局与控制钮样式依赖它
-  applyPlatformClass();
   const app = document.getElementById("app")!;
 
   const store = new AppStore({
@@ -151,6 +150,12 @@ async function main(): Promise<void> {
   }
   applyTheme(store);
   renderNotice();
+  // 跨天跟随:应用常驻时日期翻转,把格子页视图带回今天
+  setInterval(() => {
+    if (store.viewDay !== todayKey()) store.setViewDay(todayKey());
+  }, 30_000);
+  // 未记录提醒(默认关,设置里可开)
+  createRecordReminder(store);
   // 版本号写入页面,方便用户反馈问题;暴露 store 便于调试与端到端测试
   document.title = `tanalyse v${APP_VERSION}`;
   (window as unknown as Record<string, unknown>).__tanalyse = { store };

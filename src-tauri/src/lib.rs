@@ -7,10 +7,11 @@ pub mod single_instance;
 /// 窗口圆角(逻辑像素)。前端 CSS 的 `--window-radius` 必须与此一致:
 /// macOS 的 vibrancy 圆角与页面内容都对同一个值取整,不一致会错位。
 /// `css_matches_window_radius` 测试会读 style.css 断言两者相等。
-pub const WINDOW_RADIUS: f64 = 22.0;
+/// 窗口为直角(0),不再做圆角窗口。
+pub const WINDOW_RADIUS: f64 = 0.0;
 
 /// 按平台应用原生磨砂玻璃效果。
-/// macOS 圆角与前端 --window-radius 保持一致,四角由 vibrancy 与内容同时裁圆。
+/// macOS 圆角与前端 --window-radius 保持一致,四角由 vibrancy 与内容同时裁直。
 #[cfg(not(fuzzing))]
 fn apply_window_effects(window: &tauri::WebviewWindow) {
     #[cfg(target_os = "macos")]
@@ -27,9 +28,9 @@ fn apply_window_effects(window: &tauri::WebviewWindow) {
     #[cfg(target_os = "windows")]
     {
         // Windows 的原生 Acrylic 是铺满矩形窗口的:无边框透明窗口里,它会在
-        // CSS 圆角之外露出一圈方形毛玻璃;无边框窗口默认的 1px 白边/阴影同样
-        // 是方的。两样都关掉,圆角改由"透明窗口 + CSS 圆角 + 半透明底色"给出,
-        // 各 Windows 版本观感一致,也不再有方形外框。
+        // 内容边界之外露出一圈方形毛玻璃;无边框窗口默认的 1px 白边/阴影同样
+        // 多出一圈。两样都关掉,窗口观感由"透明窗口 + CSS 底色"给出,
+        // 各 Windows 版本一致。
         let _ = window.set_shadow(false);
     }
     #[cfg(target_os = "linux")]
@@ -55,6 +56,7 @@ pub fn run() {
         ))
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             if let Some(window) = app.get_webview_window("main") {
                 apply_window_effects(&window);

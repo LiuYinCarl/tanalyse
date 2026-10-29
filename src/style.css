@@ -14,7 +14,9 @@
   --accent: #7fb0dc;
   --accent-deep: #527187;
   --heat-empty: #00000016;
-  --window-radius: 22px;
+  /* 窗口最外层直角:不再做圆角窗口(与后端 WINDOW_RADIUS = 0 对齐);
+   * 内部面板/控件的圆角(--radius-*)保持不变 */
+  --window-radius: 0px;
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
 
   --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC",
@@ -137,19 +139,8 @@ body {
   align-items: center;
   gap: 12px;
   -webkit-app-region: drag;
-  padding: 0 10px;
-}
-
-/* Windows/Linux 的窗口按钮贴住右上角:右侧不留内边距,悬停底色才不会缺一角 */
-html[data-os="windows"] .titlebar,
-html[data-os="linux"] .titlebar {
-  padding-right: 0;
-}
-
-/* 最大化时铺满屏幕,收掉窗口圆角,避免四角露出透明缺口 */
-html[data-os="windows"][data-maximized="true"],
-html[data-os="linux"][data-maximized="true"] {
-  --window-radius: 0;
+  /* 右侧不留内边距:窗口按钮贴住右上角,悬停底色才不会缺一角 */
+  padding: 0 0 0 10px;
 }
 
 .titlebar-brand {
@@ -174,113 +165,15 @@ html[data-os="linux"][data-maximized="true"] {
   font-size: 12.5px;
 }
 
-/* 窗口控制钮:macOS 左置红绿灯,Windows/Linux 右置系统式按钮。
- * 所有符号都用 CSS 画(不依赖字体字符),免得缺字体的系统显示成方块。 */
+/* 窗口控制钮:所有平台统一右置 Windows 系统式按钮。
+ * 符号用 CSS 画(不依赖字体字符),免得缺字体的系统显示成方块。 */
 .window-controls {
   display: flex;
   align-items: center;
-  -webkit-app-region: no-drag;
-}
-
-.window-controls-macos {
-  gap: 8px;
-}
-
-.window-controls-windows {
   align-self: stretch;
   margin-left: auto;
+  -webkit-app-region: no-drag;
 }
-
-/* ---- macOS:红绿灯 ---- */
-
-.tl {
-  width: 12px;
-  height: 12px;
-  padding: 0;
-  border-radius: 50%;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  position: relative;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  transition: filter 0.15s var(--ease);
-}
-
-.tl:hover {
-  filter: brightness(1.06);
-}
-
-.tl:active {
-  filter: brightness(0.88);
-}
-
-.tl-close {
-  background: #ff5f57;
-}
-
-.tl-min {
-  background: #febc2e;
-}
-
-.tl-max {
-  background: #28c840;
-}
-
-.tl-glyph {
-  position: relative;
-  width: 8px;
-  height: 8px;
-  opacity: 0;
-  transition: opacity 0.12s ease;
-}
-
-.window-controls-macos:hover .tl-glyph {
-  opacity: 1;
-}
-
-.tl-glyph::before,
-.tl-glyph::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  background: rgba(20, 30, 26, 0.62);
-  border-radius: 1px;
-}
-
-/* 关闭 × */
-.tl-close .tl-glyph::before,
-.tl-close .tl-glyph::after {
-  width: 7px;
-  height: 1.4px;
-}
-.tl-close .tl-glyph::before {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-.tl-close .tl-glyph::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-/* 最小化 − */
-.tl-min .tl-glyph::before {
-  width: 7px;
-  height: 1.4px;
-  transform: translate(-50%, -50%);
-}
-
-/* 最大化 □ */
-.tl-max .tl-glyph::before {
-  width: 6px;
-  height: 6px;
-  background: transparent;
-  border: 1.4px solid rgba(20, 30, 26, 0.62);
-  border-radius: 1.5px;
-  transform: translate(-50%, -50%);
-}
-
-/* ---- Windows/Linux:系统式标题栏按钮 ---- */
 
 .wbtn {
   width: 46px;

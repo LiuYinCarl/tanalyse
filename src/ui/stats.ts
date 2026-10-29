@@ -15,7 +15,6 @@ import {
   computeDayBars,
   computeLineSeries,
   computePieSlices,
-  topRoundedBar,
 } from "../logic/stats.ts";
 import { dayRange, dayKeyToDate, lastNDays, todayKey } from "../logic/time.ts";
 import { formatMinutes, t, weekdayShort } from "../logic/i18n.ts";
@@ -162,8 +161,11 @@ export function createStatsView(store: AppStore): StatsView {
       const isNow = i === n - 1;
       if (b.h > 0) {
         svgEl.append(
-          svg("path", {
-            d: topRoundedBar(b.x, b.y, b.w, b.h),
+          svg("rect", {
+            x: b.x,
+            y: b.y,
+            width: b.w,
+            height: b.h,
             class: `bar-rect${isNow ? " bar-rect-now" : ""}`,
             title: tipOf(b),
           }),

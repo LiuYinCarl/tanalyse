@@ -4,7 +4,6 @@ import {
   computeDayBars,
   computeLineSeries,
   computePieSlices,
-  topRoundedBar,
 } from "./stats.ts";
 
 const TAU = Math.PI * 2;
@@ -228,30 +227,5 @@ describe("computeDayBars", () => {
     const dense = computeDayBars(thirty, 0, 0, 600, 100);
     expect(dense.ticks.length).toBeLessThanOrEqual(8);
     expect(dense.ticks[dense.ticks.length - 1].index).toBe(29);
-  });
-});
-
-describe("topRoundedBar", () => {
-  it("零高度/零宽度返回空路径", () => {
-    expect(topRoundedBar(0, 0, 10, 0)).toBe("");
-    expect(topRoundedBar(0, 0, 0, 10)).toBe("");
-  });
-
-  it("路径为闭合曲线,圆角不超过柱宽一半", () => {
-    const d = topRoundedBar(10, 20, 8, 60);
-    expect(d.startsWith("M")).toBe(true);
-    expect(d.endsWith("Z")).toBe(true);
-    // 顶部两个圆弧
-    expect(d.match(/A 4 4 0 0 1 /g)?.length).toBe(2);
-    // 底部贴基线:最低点 y = 20 + 60
-    expect(d).toContain("80.00");
-  });
-
-  it("高度不足时圆角按柱高收敛,仍为合法闭合路径", () => {
-    const d = topRoundedBar(0, 98, 10, 2);
-    expect(d.startsWith("M")).toBe(true);
-    expect(d.endsWith("Z")).toBe(true);
-    // r = min(w/2, h, 6) = 2
-    expect(d).toContain("A 2 2 0 0 1 ");
   });
 });

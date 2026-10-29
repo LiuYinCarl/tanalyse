@@ -129,6 +129,7 @@ function sanitizeSettings(raw: unknown, repairs: string[]): AppSettings {
   else if (o.locale !== undefined) repairs.push(msg("repair.localeReset"));
   if (o.weekStartsOn === 0 || o.weekStartsOn === 1) s.weekStartsOn = o.weekStartsOn;
   if (typeof o.autoStart === "boolean") s.autoStart = o.autoStart;
+  if (typeof o.remindRecord === "boolean") s.remindRecord = o.remindRecord;
   return s;
 }
 

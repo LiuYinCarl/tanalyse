@@ -238,22 +238,3 @@ export function computeDayBars(
   return { bars, yMax, ticks };
 }
 
-/**
- * 顶部圆角的柱体路径(底部平直贴基线)。圆角不超过柱宽一半与柱高。
- * h ≤ 0 返回空串(零值由调用方画基线小横条)。
- */
-export function topRoundedBar(x: number, y: number, w: number, h: number): string {
-  if (w <= 0 || h <= 0) return "";
-  const r = Math.min(w / 2, h, 6);
-  const x2 = x + w;
-  const yb = y + h;
-  return [
-    `M ${x.toFixed(2)} ${(y + r).toFixed(2)}`,
-    `A ${r} ${r} 0 0 1 ${(x + r).toFixed(2)} ${y.toFixed(2)}`,
-    `L ${(x2 - r).toFixed(2)} ${y.toFixed(2)}`,
-    `A ${r} ${r} 0 0 1 ${x2.toFixed(2)} ${(y + r).toFixed(2)}`,
-    `L ${x2.toFixed(2)} ${yb.toFixed(2)}`,
-    `L ${x.toFixed(2)} ${yb.toFixed(2)}`,
-    "Z",
-  ].join(" ");
-}

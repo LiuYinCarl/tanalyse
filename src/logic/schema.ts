@@ -32,6 +32,8 @@ export interface AppSettings {
   accentColor: string;
   weekStartsOn: 0 | 1;
   autoStart: boolean;
+  /** 未记录提醒:工作时段每隔 2 小时,当天没有记录时弹系统通知。默认关闭。 */
+  remindRecord: boolean;
   /** 界面语言;随数据持久化,缺省时按系统语言探测。 */
   locale: Locale;
 }
@@ -93,6 +95,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   accentColor: DEFAULT_ACCENT,
   weekStartsOn: 1,
   autoStart: false,
+  remindRecord: false,
   locale: detectLocale(),
 };
 

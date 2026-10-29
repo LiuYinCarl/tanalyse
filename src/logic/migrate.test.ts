@@ -35,11 +35,12 @@ describe("loadData", () => {
         { id: "c_1", name: "阅读", color: "#c8b6a6" },
       ],
       entries: { "2026-09-21": [null, "work", "work", ...new Array(POSITIONS_PER_DAY - 3).fill(null)] },
-      settings: { theme: "dark", accentColor: "#8FCBA8", weekStartsOn: 0, autoStart: true },
+      settings: { theme: "dark", accentColor: "#8FCBA8", weekStartsOn: 0, autoStart: true, remindRecord: true },
     };
     const r = loadData(JSON.stringify(raw));
     expect(r.repairs).toEqual([]);
     expect(r.data.settings.theme).toBe("dark");
+    expect(r.data.settings.remindRecord).toBe(true);
     expect(r.data.categories).toHaveLength(3);
     expect(r.data.entries["2026-09-21"][1]).toBe("work");
   });

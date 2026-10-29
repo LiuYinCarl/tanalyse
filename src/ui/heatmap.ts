@@ -145,7 +145,6 @@ export function createHeatmap(store: AppStore): HeatmapView {
           y,
           width: cell,
           height: cell,
-          rx: Math.min(5, cell * 0.3),
           class: `hm-cell${future ? " hm-future" : ""}${c.day === today ? " hm-today" : ""}`,
           fill: future ? "transparent" : shades[c.level],
           "data-day": c.day,

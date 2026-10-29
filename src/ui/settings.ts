@@ -19,6 +19,7 @@ import {
   revealPath,
   setAutoStart,
 } from "../bridge.ts";
+import { ensureNotificationPermission } from "../reminder.ts";
 import { loadData, serializeData } from "../logic/migrate.ts";
 import { t } from "../logic/i18n.ts";
 import type { Locale, MsgKey } from "../logic/i18n.ts";
@@ -219,8 +220,9 @@ export function createSettingsView(store: AppStore): SettingsView {
   // ---- 通用 ----
   const general = card(t("settings.general"));
   const autoRow = h("div", { class: "setting-row" });
+  const remindRow = h("div", { class: "setting-row" });
   const weekRow = h("div", { class: "setting-row" });
-  general.body.append(autoRow, weekRow);
+  general.body.append(autoRow, remindRow, weekRow);
 
   function renderGeneral(): void {
     clear(autoRow);
@@ -237,6 +239,22 @@ export function createSettingsView(store: AppStore): SettingsView {
       },
     });
     autoRow.append(toggle);
+
+    clear(remindRow);
+    remindRow.append(h("label", { class: "setting-label" }, t("settings.remindRecord")));
+    const remindToggle = h("button", {
+      class: `toggle ${store.data.settings.remindRecord ? "toggle-on" : ""}`,
+      role: "switch",
+      "aria-checked": String(store.data.settings.remindRecord),
+      onclick: async () => {
+        const next = !store.data.settings.remindRecord;
+        store.updateSettings({ remindRecord: next });
+        // 打开时顺带请求系统通知权限,免得权限弹窗出现在两小时之后
+        if (next) await ensureNotificationPermission();
+        renderGeneral();
+      },
+    });
+    remindRow.append(remindToggle, h("span", { class: "hint" }, t("settings.remindRecordHint")));
 
     clear(weekRow);
     weekRow.append(h("label", { class: "setting-label" }, t("settings.weekStart")));
