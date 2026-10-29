@@ -15,8 +15,8 @@ jobs:
     name: 前端测试与覆盖率(≥90%)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -26,7 +26,7 @@ jobs:
         run: npm test
       - name: 覆盖率(门槛 90%)
         run: npm run coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage-report
@@ -37,7 +37,7 @@ jobs:
     name: Rust 测试与覆盖率(≥90%)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           # llvm-tools-preview 是 cargo-llvm-cov 的前置组件
@@ -64,7 +64,7 @@ jobs:
           cd src-tauri
           cargo llvm-cov --lcov --output-path lcov.info --fail-under-lines 90 \
             --ignore-filename-regex 'src/(main|lib)\.rs$'
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: rust-lcov
           path: src-tauri/lcov.info
@@ -75,7 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true # 模糊测试为探索性任务,发现 crash 再修复
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@nightly
       - uses: taiki-e/install-action@v2
         with:
