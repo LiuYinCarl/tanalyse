@@ -3463,7 +3463,7 @@ dependencies = [
 
 [[package]]
 name = "tanalyse"
-version = "1.3.0"
+version = "1.4.0"
 dependencies = [
  "serde",
  "serde_json",
