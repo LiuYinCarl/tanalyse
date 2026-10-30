@@ -38,7 +38,7 @@ function applyTheme(store: AppStore): void {
   rootEl.style.setProperty("--accent", accent);
   rootEl.style.setProperty("--accent-deep", hexMix(accent, "#1b2420", theme === "dark" ? 0.34 : 0.45));
   rootEl.style.setProperty("--heat-empty", theme === "dark" ? "#ffffff16" : "#00000016");
-  // 原生 vibrancy/Acrylic 不会自己跟随应用主题,必须显式同步窗口外观
+  // 原生窗口底色不随 CSS 变化,显式同步窗口外观,避免缩放/首绘露出系统主题底色
   void setWindowTheme(theme);
 }
 

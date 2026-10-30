@@ -42,8 +42,8 @@ fn parse_window_theme(name: &str) -> Option<tauri::Theme> {
 
 /// 让原生窗口外观跟随应用主题。
 ///
-/// macOS 的 vibrancy(NSVisualEffectView)与 Windows 的 Acrylic 都按窗口外观取材质:
-/// 若只改页面里的 CSS 变量,原生那层仍停留在系统主题,深色模式会变成浑浊的中间灰。
+/// 页面底色由 CSS 变量承担,但原生窗口层的底色仍按外观取色:
+/// 不显式同步的话,缩放/首绘瞬间会露出系统主题的底色。
 #[tauri::command]
 fn set_window_theme<R: tauri::Runtime>(
     window: tauri::WebviewWindow<R>,

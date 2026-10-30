@@ -69,7 +69,7 @@ export function invoke<T = unknown>(cmd: Cmd, args?: Record<string, unknown>): P
 
 /**
  * 让原生窗口外观跟随应用主题。
- * 原生 vibrancy / Acrylic 按窗口外观取材质,只改 CSS 会让深色模式停在系统主题上。
+ * 原生窗口层的底色按外观取色,只改 CSS 会在缩放/首绘时露出系统主题底色。
  * 浏览器调试环境没有原生层,静默忽略。
  */
 export async function setWindowTheme(theme: "light" | "dark"): Promise<void> {

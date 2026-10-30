@@ -1,4 +1,4 @@
-/** 颜色工具:十六进制混合,用于从主题色派生色阶(热力图、磨砂层)。 */
+/** 颜色工具:十六进制混合,用于从主题色派生色阶(热力图、强调色深浅)。 */
 
 export function hexToRgb(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
